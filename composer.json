@@ -1,0 +1,23 @@
+{
+  "name": "csgt/hermes",
+  "description": "",
+  "authors": [
+    {
+      "name": "CS",
+      "email": "info@cs.com.gt"
+    }
+  ],
+  "require": {
+    "php": ">=5.4.0",
+    "illuminate/support": "~5.1",
+    "csgt/components": "5.4.*-dev",
+  },
+  "autoload": {
+    "classmap": [
+    ],
+    "psr-4": {
+      "Csgt\\Face\\": "src/"
+    }
+  },
+  "minimum-stability" : "stable"
+}
