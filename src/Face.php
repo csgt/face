@@ -40,7 +40,13 @@ class Face {
 		'footer'                 => '',
 		'requestor'							 => '',
 		'usuario'		             => '',
+		'formatos'							 => 'XML PDF',
 		'test'									 => false,
+	];
+
+	private $reimpresion = [
+		'serie'       => '',
+		'correlativo' => ''
 	];
 
 	private $detalles;
@@ -148,22 +154,9 @@ class Face {
 				'User'        => $this->empresa['requestor'],
 				'UserName'    => $username,
 				'Data1'       => $aXml,
-				'Data2'       => 'XML PDF',
+				'Data2'       => $this->empresa['formatos'],
 				'Data3'       => ''
 	    ]]); 
-    	/*
-    	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
-				'Requestor'   => $this->empresa['requestor'],
-				'Transaction' => 'GET_DOCUMENT',
-				'Country'     => $this->empresa['codigopais'],
-				'Entity'      => $this->fixnit($this->empresa['nit'], true),
-				'User'        => $this->empresa['requestor'],
-				'UserName'    => $username,
-				'Data1'       => 'E',
-				'Data2'       => 101,
-				'Data3'       => ''
-				]	
-			]); */
     } 
     catch (Exception $e) {
     	return response()->json(['error' => $e->getMessage()], 500);
@@ -186,6 +179,52 @@ class Face {
 				$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
 				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
     		
+    		return response()->json(['data' => $respuesta]);
+   		}
+   	} 
+    catch (Exception $e) {
+    	return response()->json(['error' => $e->getMessage()], 400);
+    }
+	}
+
+	public function pdf() {
+		if ($this->empresa['test'])
+			$url = config('csgtface.testurl');
+		else
+			$url = config('csgtface.url');
+		
+		$username = $this->empresa['usuario'];
+		if($this->resolucion['proveedorface'] == 'gyt') {
+			$username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+		} 
+
+		$soapClient = new SoapClient($url, ["trace" => true, ""]); 
+    try {
+    	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
+				'Requestor'   => $this->empresa['requestor'],
+				'Transaction' => 'GET_DOCUMENT',
+				'Country'     => $this->empresa['codigopais'],
+				'Entity'      => $this->fixnit($this->empresa['nit'], true),
+				'User'        => $this->empresa['requestor'],
+				'UserName'    => $username,
+				'Data1'       => $this->reimpresion['serie'],
+				'Data2'       => $this->reimpresion['correlativo'],
+				'Data3'       => 'PDF'
+				]	
+			]); 
+    } 
+    catch (Exception $e) {
+    	return response()->json(['error' => $e->getMessage()], 500);
+    }
+    
+    try {
+    	$result = $info->RequestTransactionResult;
+
+    	if ($result->Response->Result == false) {
+    		return response()->json(['error' => $result->Response->Description], 400);
+    	}
+    	else {
+				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
     		return response()->json(['data' => $respuesta]);
    		}
    	} 
@@ -307,6 +346,25 @@ class Face {
 			}
 		}
 		$this->factura = array_merge($this->factura, $aParams);
+	}
+
+	public function setReimpresion($aParams){
+		$validos = ['serie', 'correlativo'];
+
+		foreach($aParams as $key => $val) {
+			if (!in_array($key, $validos)) {
+				dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+			}
+		}
+		$this->reimpresion = array_merge($this->reimpresion, $aParams);
+	}
+
+	public function setFormatos($aFormatos){
+		if (($aFormatos !='XML') && ($aFormatos != 'XML PDF')) {
+			dd('Parámetro inválido, solo se permiten: "XML" O "XML PDF"');
+		}
+
+		$this->empresa['formatos'] = $aFormatos;
 	}
 
 	private function array_to_xml($student_info, &$xml_student_info) {
