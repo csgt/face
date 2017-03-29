@@ -145,48 +145,38 @@ class Face {
 		} 
 
 		$soapClient = new SoapClient($url, ["trace" => true, ""]); 
-    try {
-    	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
-				'Requestor'   => $this->empresa['requestor'],
-				'Transaction' => 'CONVERT_NATIVE_XML',
-				'Country'     => $this->empresa['codigopais'],
-				'Entity'      => $this->fixnit($this->empresa['nit'], true),
-				'User'        => $this->empresa['requestor'],
-				'UserName'    => $username,
-				'Data1'       => $aXml,
-				'Data2'       => $this->empresa['formatos'],
-				'Data3'       => ''
-	    ]]); 
-    } 
-    catch (Exception $e) {
-    	return response()->json(['error' => $e->getMessage()], 500);
-    }
+  	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
+			'Requestor'   => $this->empresa['requestor'],
+			'Transaction' => 'CONVERT_NATIVE_XML',
+			'Country'     => $this->empresa['codigopais'],
+			'Entity'      => $this->fixnit($this->empresa['nit'], true),
+			'User'        => $this->empresa['requestor'],
+			'UserName'    => $username,
+			'Data1'       => $aXml,
+			'Data2'       => $this->empresa['formatos'],
+			'Data3'       => ''
+    ]]); 
     
-    try {
-    	$result = $info->RequestTransactionResult;
+  	$result = $info->RequestTransactionResult;
 
-    	if ($result->Response->Result == false) {
-    		return response()->json(['error' => $result->Response->Description], 400);
-    	}
-    	else {
-    		//dd($result->ResponseData);
-    		$xml = $result->ResponseData->ResponseData1;
-    		$xml = simplexml_load_string(base64_decode($xml));
+  	if ($result->Response->Result == false) {
+  		throw new Exception($result->Response->Description);  		
+  	}
+  	else {
+  		//dd($result->ResponseData);
+  		$xml = $result->ResponseData->ResponseData1;
+  		$xml = simplexml_load_string(base64_decode($xml));
 
-				$respuesta['id']        = $xml->Documento["Id"]->__toString();
-				$respuesta['serie']     = $xml->Documento->CAE->DCAE->Serie->__toString();
-				$respuesta['documento'] = $xml->Documento->CAE->DCAE->NumeroDocumento->__toString();
-				$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
-				$respuesta['xml']       = $result->ResponseData->ResponseData1;
-				$respuesta['html']      = $result->ResponseData->ResponseData2;
- 				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
-    		
-    		return response()->json(['data' => $respuesta]);
-   		}
-   	} 
-    catch (Exception $e) {
-    	return response()->json(['error' => $e->getMessage()], 400);
-    }
+			$respuesta['id']        = $xml->Documento["Id"]->__toString();
+			$respuesta['serie']     = $xml->Documento->CAE->DCAE->Serie->__toString();
+			$respuesta['documento'] = $xml->Documento->CAE->DCAE->NumeroDocumento->__toString();
+			$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
+			$respuesta['xml']       = $result->ResponseData->ResponseData1;
+			$respuesta['html']      = $result->ResponseData->ResponseData2;
+				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
+  		
+  		return response()->json(['data' => $respuesta]);
+ 		}
 	}
 
 	public function pdf() {
@@ -201,38 +191,30 @@ class Face {
 		} 
 
 		$soapClient = new SoapClient($url, ["trace" => true, ""]); 
-    try {
-    	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
-				'Requestor'   => $this->empresa['requestor'],
-				'Transaction' => 'GET_DOCUMENT',
-				'Country'     => $this->empresa['codigopais'],
-				'Entity'      => $this->fixnit($this->empresa['nit'], true),
-				'User'        => $this->empresa['requestor'],
-				'UserName'    => $username,
-				'Data1'       => $this->reimpresion['serie'],
-				'Data2'       => $this->reimpresion['correlativo'],
-				'Data3'       => 'PDF'
-				]	
-			]); 
-    } 
-    catch (Exception $e) {
-    	return response()->json(['error' => $e->getMessage()], 500);
-    }
-    
-    try {
-    	$result = $info->RequestTransactionResult;
 
-    	if ($result->Response->Result == false) {
-    		return response()->json(['error' => $result->Response->Description], 400);
-    	}
-    	else {
-				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
-    		return response()->json(['data' => $respuesta]);
-   		}
-   	} 
-    catch (Exception $e) {
-    	return response()->json(['error' => $e->getMessage()], 400);
-    }
+  	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
+			'Requestor'   => $this->empresa['requestor'],
+			'Transaction' => 'GET_DOCUMENT',
+			'Country'     => $this->empresa['codigopais'],
+			'Entity'      => $this->fixnit($this->empresa['nit'], true),
+			'User'        => $this->empresa['requestor'],
+			'UserName'    => $username,
+			'Data1'       => $this->reimpresion['serie'],
+			'Data2'       => $this->reimpresion['correlativo'],
+			'Data3'       => 'PDF'
+			]	
+		]); 
+
+  	$result = $info->RequestTransactionResult;
+
+  	if ($result->Response->Result == false) {
+  		throw new Exception($result->Response->Description);  	
+  	}
+  	else {
+			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
+  		return response()->json(['data' => $respuesta]);
+ 		}
+
 	}
 
 	public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada='',
