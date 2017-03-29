@@ -177,7 +177,8 @@ class Face {
 				$respuesta['serie']     = $xml->Documento->CAE->DCAE->Serie->__toString();
 				$respuesta['documento'] = $xml->Documento->CAE->DCAE->NumeroDocumento->__toString();
 				$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
-				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
+				$respuesta['xml']       = $xml;
+ 				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
     		
     		return response()->json(['data' => $respuesta]);
    		}
