@@ -40,7 +40,7 @@ class Face {
 		'footer'                 => '',
 		'requestor'							 => '',
 		'usuario'		             => '',
-		'formatos'							 => 'XML PDF',
+		'formatos'							 => 'XML',
 		'test'									 => false,
 	];
 
@@ -177,7 +177,8 @@ class Face {
 				$respuesta['serie']     = $xml->Documento->CAE->DCAE->Serie->__toString();
 				$respuesta['documento'] = $xml->Documento->CAE->DCAE->NumeroDocumento->__toString();
 				$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
-				$respuesta['xml']       = $xml;
+				$respuesta['xml']       = $result->ResponseData->ResponseData1;
+				$respuesta['html']      = $result->ResponseData->ResponseData2;
  				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
     		
     		return response()->json(['data' => $respuesta]);
@@ -360,12 +361,15 @@ class Face {
 		$this->reimpresion = array_merge($this->reimpresion, $aParams);
 	}
 
-	public function setFormatos($aFormatos){
-		if (($aFormatos !='XML') && ($aFormatos != 'XML PDF')) {
-			dd('Parámetro inválido, solo se permiten: "XML" O "XML PDF"');
-		}
+	public function setFormatos($aParams){
+		$validos = ['XML', 'PDF', 'HTML'];
 
-		$this->empresa['formatos'] = $aFormatos;
+		foreach($aParams as $key) {
+			if (!in_array($key, $validos)) {
+				dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+			}
+		}
+		$this->empresa['formatos'] = trim(implode(' ', $aParams));
 	}
 
 	private function array_to_xml($student_info, &$xml_student_info) {
