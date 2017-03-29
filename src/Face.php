@@ -52,14 +52,26 @@ class Face {
 	private $detalles;
 
 	public function generar() {
+		if ($this->empresa['dispositivoelectronico'] == '') {
+			throw new Exception('El dispositivo electrónico es requerido');
+		}
+		if ($this->empresa['requestor'] == '') {
+			throw new Exception('El requestor es requerido');
+		}
+		if ($this->empresa['usuario'] == '') {
+			throw new Exception('El usuario es requerido');
+		}
+		if ($this->empresa['codigoestablecimiento'] == '') {
+			throw new Exception('El código de establecimiento es requerido');
+		}
 		if ($this->empresa['nit'] == '') {
-			return response()->json(['error' => 'El NIT de la empresa emisora es requerido'], 400);
+			throw new Exception('El NIT de la empresa emisora es requerido');
 		}
 		if ($this->factura['nit'] == '') {
-			return response()->json(['error' => 'El NIT del comprador es requerido'], 400);
+			throw new Exception('El NIT del comprador es requerido');
 		}
 		if (count($this->detalles) == 0) {
-			return response()->json(['error' => 'Se debe agregar al menos un detalle a la factura'], 400);
+			throw new Exception('Se debe agregar al menos un detalle a la factura');
 		}
 
 		$x = [
