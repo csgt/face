@@ -209,7 +209,7 @@ class Face {
 			$respuesta['html']      = $result->ResponseData->ResponseData2;
 			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
   		
-  		return response()->json(['data' => $respuesta]);
+  		return $respuesta;
  		}
 	}
 
@@ -246,7 +246,7 @@ class Face {
   	}
   	else {
 			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
-  		return response()->json(['data' => $respuesta]);
+  		return $respuesta;
  		}
 
 	}
