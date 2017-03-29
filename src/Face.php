@@ -1,7 +1,7 @@
 <?php  namespace Csgt\Face;
 
 use Csgt\Components\Components;
-use SimpleXMLElement, SoapClient, Exception;
+use DOMDocument, SoapClient, Exception, SimpleXMLElement;
 
 class Face {
 	private $resolucion = [
@@ -165,15 +165,37 @@ class Face {
   	else {
   		//dd($result->ResponseData);
   		$xml = $result->ResponseData->ResponseData1;
-  		$xml = simplexml_load_string(base64_decode($xml));
 
-			$respuesta['id']        = $xml->Documento["Id"]->__toString();
-			$respuesta['serie']     = $xml->Documento->CAE->DCAE->Serie->__toString();
-			$respuesta['documento'] = $xml->Documento->CAE->DCAE->NumeroDocumento->__toString();
-			$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
+  		$xmlDoc = new DOMDocument();
+			$xmlDoc->loadXML(base64_decode($xml));
+
+			$invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2','*');
+			$invoice = $invoice->item(0);
+
+  		$id       = $invoice->parentNode->getAttribute('Id');
+			$buyer    = $invoice->getElementsByTagName('buyer');
+			$nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
+			$nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
+			$dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
+			$dir2     = $nameaddr[0]->getElementsByTagName('streetAddressTwo')[0]->nodeValue;
+
+			$cae  = $xmlDoc->getElementsByTagName('CAE');
+			$dcae = $cae[0]->getElementsByTagName('DCAE');
+			$fcae = $cae[0]->getElementsByTagName('FCAE');
+
+			$serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
+			$documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
+			$firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
+
+			$respuesta['id']        = $id;
+			$respuesta['serie']     = $serie;
+			$respuesta['documento'] = $documento;
+			$respuesta['firma']     = $firma;
+			$respuesta['nombre']    = $nombre;
+			$respuesta['direccion'] = trim($dir1 . ' ' . $dir2);
 			$respuesta['xml']       = $result->ResponseData->ResponseData1;
 			$respuesta['html']      = $result->ResponseData->ResponseData2;
-				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
+			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
   		
   		return response()->json(['data' => $respuesta]);
  		}
