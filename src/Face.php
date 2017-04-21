@@ -101,10 +101,12 @@ class Face {
 				'NombreComercial'    => ($this->factura['nombre'] == ''? 'CONSUMIDOR FINAL': $this->factura['nombre']),
 				'DireccionComercial' => [
 					'Direccion1'   => ($this->factura['direccion'] == ''? 'CIUDAD': $this->factura['direccion']),
+					'Direccion2'   => '.',
 					'Municipio'    => 'GUATEMALA',
 					'Departamento' => 'GUATEMALA',
 					'CodigoDePais' => 'GT'
-				]
+				],
+				'Idioma' => 'es'
 			];
 		}
 		$x['Detalles'] = $this->detalles;
