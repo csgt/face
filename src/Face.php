@@ -50,6 +50,11 @@ class Face {
 	];
 
 	private $detalles;
+	// private $descuentos = ['SumaDeDescuentos' => 0];
+	private $descuentosNKeys = 2;
+	private $descuentos = [
+	  'SumaDeDescuentos' => 0,
+	];
 
 	public function generar() {
 		if ($this->empresa['dispositivoelectronico'] == '') {
@@ -112,7 +117,14 @@ class Face {
 		$x['Detalles'] = $this->detalles;
 
 		$x['Totales'] = [
-      'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'],4,'.',''),
+      'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'],4,'.','')
+    ];
+
+    if (count($this->descuentos)>$this->descuentosNKeys) {
+    	$x['Totales']['DescuentosYRecargos'] = $this->descuentos;
+    }
+
+    $arr = [
       'SubTotalConDR' => number_format($this->totales['valorConDRMonto'],4,'.',''),
       'Impuestos'     => [
 				'TotalDeImpuestos'      => number_format($this->totales['impuestos'],4,'.',''),
@@ -129,6 +141,8 @@ class Face {
 			'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2,'.',''),
     ];
 
+    $x['Totales'] = array_merge($x['Totales'], $arr);
+
 		if($this->empresa['footer'] <> '') {
 			$x['TextosDePie'] =[
         'Texto' => $this->empresa['footer'],
@@ -140,9 +154,10 @@ class Face {
 
 		$xmlText = utf8_encode($xml->asXML());
 
-		for ($i=0; $i<count($this->detalles); $i++ ) {
-			$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
-		} 
+		 for ($i=0; $i<count($this->detalles); $i++ ) {
+		 	$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
+		 	$xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
+		 } 
 		
 		return $this->sendXML($xmlText);
 	}
@@ -288,12 +303,38 @@ class Face {
       'ValorSinDR'     => [
 				'Precio' => number_format($valorSinDRPrecio, 4,'.',''),
 				'Monto'  => number_format($valorSinDRMonto, 4,'.',''),
-      ],
-      'ValorConDR'     => [
+      ]
+    ];
+
+		if($aDescuento>0) {
+
+    	$detalle['DescuentosYRecargos'] = [
+    		'SumaDeDescuentos' => number_format($descuento, 4,'.',''),
+    		'DescuentoORecargo' => [
+					'Operacion' => 'DESCUENTO',
+					'Servicio'  => 'ALLOWANCE_GLOBAL',
+					'Base'      => number_format($valorSinDRMonto, 4,'.',''),
+					'Tasa'      => number_format($descuentotasa, 4,'.',''),
+					'Monto'     => number_format($descuento, 4,'.','')
+    		]
+    	];
+    	$this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.','');
+
+    	$this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
+				'Operacion' => 'DESCUENTO',
+				'Servicio'  => 'ALLOWANCE_GLOBAL',
+				'Base'      => number_format($valorSinDRMonto, 4,'.',''),
+				'Tasa'      => number_format($descuentotasa, 4,'.',''),
+				'Monto'     => number_format($descuento, 4,'.','')
+  		];
+   	}
+
+    $detalle['ValorConDR'] = [
 				'Precio' => number_format($valorConDRPrecio, 4,'.',''),
 				'Monto'  => number_format($valorConDRMonto, 4,'.',''),
-      ],
-      'Impuestos' => [
+    ];
+
+    $detalle['Impuestos'] = [
 					'TotalDeImpuestos'      => number_format($impuestos, 4,'.',''),
 					'IngresosNetosGravados' => number_format($valorConDRMonto, 4,'.',''),
 					'TotalDeIVA'            => number_format($impuestos, 4,'.',''),
@@ -303,9 +344,9 @@ class Face {
 						'Tasa'  => $this->empresa['iva'],
 						'Monto' => number_format($impuestos, 4,'.','')
           ]
-      ],
-      'Categoria' => $aBienServicio
     ];
+    $detalle['Categoria'] = $aBienServicio;
+
     if (trim($aDescripcionAmpliada) <>'' || trim(substr($aDescripcion, 69))) {
     	$detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . ' ' . $aDescripcionAmpliada), 0, 999));
     }
@@ -319,18 +360,7 @@ class Face {
     	$detalle['TextosDePosicion'] = $textos;
     }
 
-    if($aDescuento>0) {
-    	$detalle['DescuentosYRecargos'] = [
-    		'SumaDeDescuentos' => number_format($descuento, 4,'.',''),
-    		'DescuentoORecargo' => [
-					'Operacion' => 'DESCUENTO',
-					'Servicio'  => 'ALLOWANCE_GLOBAL',
-					'Base'      => number_format($valorSinDRMonto, 4,'.',''),
-					'Tasa'      => number_format($descuentotasa, 4,'.',''),
-					'Monto'     => number_format($descuento, 4,'.','')
-    		]
-    	];
-   	}
+    
    	$this->detalles[] = $detalle;
    	 //['Detalle' => $detalle];
 	}
