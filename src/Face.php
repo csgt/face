@@ -1,7 +1,7 @@
 <?php  namespace Csgt\Face;
 
 use Csgt\Components\Components;
-use SimpleXMLElement, SoapClient, Exception;
+use DOMDocument, SoapClient, Exception, SimpleXMLElement;
 
 class Face {
 	private $resolucion = [
@@ -40,20 +40,43 @@ class Face {
 		'footer'                 => '',
 		'requestor'							 => '',
 		'usuario'		             => '',
+		'formatos'							 => 'XML',
 		'test'									 => false,
 	];
 
+	private $reimpresion = [
+		'serie'       => '',
+		'correlativo' => ''
+	];
+
 	private $detalles;
+	// private $descuentos = ['SumaDeDescuentos' => 0];
+	private $descuentosNKeys = 1;
+	private $descuentos = [
+	  'SumaDeDescuentos' => 0,
+	];
 
 	public function generar() {
+		if ($this->empresa['dispositivoelectronico'] == '') {
+			throw new Exception('El dispositivo electrónico es requerido');
+		}
+		if ($this->empresa['requestor'] == '') {
+			throw new Exception('El requestor es requerido');
+		}
+		if ($this->empresa['usuario'] == '') {
+			throw new Exception('El usuario es requerido');
+		}
+		if ($this->empresa['codigoestablecimiento'] == '') {
+			throw new Exception('El código de establecimiento es requerido');
+		}
 		if ($this->empresa['nit'] == '') {
-			return response()->json(['error' => 'El NIT de la empresa emisora es requerido'], 400);
+			throw new Exception('El NIT de la empresa emisora es requerido');
 		}
 		if ($this->factura['nit'] == '') {
-			return response()->json(['error' => 'El NIT del comprador es requerido'], 400);
+			throw new Exception('El NIT del comprador es requerido');
 		}
 		if (count($this->detalles) == 0) {
-			return response()->json(['error' => 'Se debe agregar al menos un detalle a la factura'], 400);
+			throw new Exception('Se debe agregar al menos un detalle a la factura');
 		}
 
 		$x = [
@@ -83,16 +106,25 @@ class Face {
 				'NombreComercial'    => ($this->factura['nombre'] == ''? 'CONSUMIDOR FINAL': $this->factura['nombre']),
 				'DireccionComercial' => [
 					'Direccion1'   => ($this->factura['direccion'] == ''? 'CIUDAD': $this->factura['direccion']),
+					'Direccion2'   => '.',
 					'Municipio'    => 'GUATEMALA',
 					'Departamento' => 'GUATEMALA',
 					'CodigoDePais' => 'GT'
-				]
+				],
+				'Idioma' => 'es'
 			];
 		}
 		$x['Detalles'] = $this->detalles;
 
 		$x['Totales'] = [
-      'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'],4,'.',''),
+      'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'],4,'.','')
+    ];
+
+    if (count($this->descuentos)>$this->descuentosNKeys) {
+    	$x['Totales']['DescuentosYRecargos'] = $this->descuentos;
+    }
+
+    $arr = [
       'SubTotalConDR' => number_format($this->totales['valorConDRMonto'],4,'.',''),
       'Impuestos'     => [
 				'TotalDeImpuestos'      => number_format($this->totales['impuestos'],4,'.',''),
@@ -109,6 +141,8 @@ class Face {
 			'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2,'.',''),
     ];
 
+    $x['Totales'] = array_merge($x['Totales'], $arr);
+
 		if($this->empresa['footer'] <> '') {
 			$x['TextosDePie'] =[
         'Texto' => $this->empresa['footer'],
@@ -120,9 +154,10 @@ class Face {
 
 		$xmlText = utf8_encode($xml->asXML());
 
-		for ($i=0; $i<count($this->detalles); $i++ ) {
-			$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
-		} 
+		 for ($i=0; $i<count($this->detalles); $i++ ) {
+		 	$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
+		 	$xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
+		 } 
 		
 		return $this->sendXML($xmlText);
 	}
@@ -139,59 +174,103 @@ class Face {
 		} 
 
 		$soapClient = new SoapClient($url, ["trace" => true, ""]); 
-    try {
-    	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
-				'Requestor'   => $this->empresa['requestor'],
-				'Transaction' => 'CONVERT_NATIVE_XML',
-				'Country'     => $this->empresa['codigopais'],
-				'Entity'      => $this->fixnit($this->empresa['nit'], true),
-				'User'        => $this->empresa['requestor'],
-				'UserName'    => $username,
-				'Data1'       => $aXml,
-				'Data2'       => 'XML PDF',
-				'Data3'       => ''
-	    ]]); 
-    	/*
-    	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
-				'Requestor'   => $this->empresa['requestor'],
-				'Transaction' => 'GET_DOCUMENT',
-				'Country'     => $this->empresa['codigopais'],
-				'Entity'      => $this->fixnit($this->empresa['nit'], true),
-				'User'        => $this->empresa['requestor'],
-				'UserName'    => $username,
-				'Data1'       => 'E',
-				'Data2'       => 101,
-				'Data3'       => ''
-				]	
-			]); */
-    } 
-    catch (Exception $e) {
-    	return response()->json(['error' => $e->getMessage()], 500);
-    }
+  	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
+			'Requestor'   => $this->empresa['requestor'],
+			'Transaction' => 'CONVERT_NATIVE_XML',
+			'Country'     => $this->empresa['codigopais'],
+			'Entity'      => $this->fixnit($this->empresa['nit'], true),
+			'User'        => $this->empresa['requestor'],
+			'UserName'    => $username,
+			'Data1'       => $aXml,
+			'Data2'       => $this->empresa['formatos'],
+			'Data3'       => ''
+    ]]); 
     
-    try {
-    	$result = $info->RequestTransactionResult;
+  	$result = $info->RequestTransactionResult;
 
-    	if ($result->Response->Result == false) {
-    		return response()->json(['error' => $result->Response->Description], 400);
-    	}
-    	else {
-    		//dd($result->ResponseData);
-    		$xml = $result->ResponseData->ResponseData1;
-    		$xml = simplexml_load_string(base64_decode($xml));
+  	if ($result->Response->Result == false) {
+  		throw new Exception($result->Response->Description);  		
+  	}
+  	else {
+  		//dd($result->ResponseData);
+  		$xml = $result->ResponseData->ResponseData1;
 
-				$respuesta['id']        = $xml->Documento["Id"]->__toString();
-				$respuesta['serie']     = $xml->Documento->CAE->DCAE->Serie->__toString();
-				$respuesta['documento'] = $xml->Documento->CAE->DCAE->NumeroDocumento->__toString();
-				$respuesta['firma']     = $xml->Documento->CAE->FCAE->SignatureValue->__toString();
-				$respuesta['pdf']       = $result->ResponseData->ResponseData3;
-    		
-    		return response()->json(['data' => $respuesta]);
-   		}
-   	} 
-    catch (Exception $e) {
-    	return response()->json(['error' => $e->getMessage()], 400);
-    }
+  		$xmlDoc = new DOMDocument();
+			$xmlDoc->loadXML(base64_decode($xml));
+
+			$invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2','*');
+			$invoice = $invoice->item(0);
+
+  		$id       = $invoice->parentNode->getAttribute('Id');
+			$buyer    = $invoice->getElementsByTagName('buyer');
+			$nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
+			$nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
+			$dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
+			$dir2     = $nameaddr[0]->getElementsByTagName('streetAddressTwo')[0]->nodeValue;
+
+			$cae  = $xmlDoc->getElementsByTagName('CAE');
+			$dcae = $cae[0]->getElementsByTagName('DCAE');
+			$fcae = $cae[0]->getElementsByTagName('FCAE');
+
+			$serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
+			$documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
+			$firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
+
+			$respuesta['id']        = $id;
+			$respuesta['serie']     = $serie;
+			$respuesta['documento'] = $documento;
+			$respuesta['firma']     = $firma;
+			$respuesta['nombre']    = $nombre;
+			$respuesta['direccion'] = trim($dir1 . ' ' . $dir2);
+			$respuesta['xml']       = $result->ResponseData->ResponseData1;
+			$respuesta['html']      = $result->ResponseData->ResponseData2;
+			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
+  		
+  		return $respuesta;
+ 		}
+	}
+
+	public function consultar () {
+		if ($this->empresa['test'])
+			$url = config('csgtface.testurl');
+		else
+			$url = config('csgtface.url');
+		
+		$username = $this->empresa['usuario'];
+		if($this->resolucion['proveedorface'] == 'gyt') {
+			$username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+		} 
+
+		$soapClient = new SoapClient($url, ["trace" => true, ""]); 
+
+  	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
+			'Requestor'   => $this->empresa['requestor'],
+			'Transaction' => 'GET_DOCUMENT',
+			'Country'     => $this->empresa['codigopais'],
+			'Entity'      => $this->fixnit($this->empresa['nit'], true),
+			'User'        => $this->empresa['requestor'],
+			'UserName'    => $username,
+			'Data1'       => $this->reimpresion['serie'],
+			'Data2'       => $this->reimpresion['correlativo'],
+			'Data3'       => 'XML PDF'
+			]	
+		]); 
+
+  	$result = $info->RequestTransactionResult;
+
+  	if ($result->Response->Result == false) {
+  		throw new Exception($result->Response->Description);  	
+  	}
+
+		return [
+			'xml' => base64_decode($result->ResponseData->ResponseData1),
+			'pdf' => $result->ResponseData->ResponseData3
+		];
+
+	}
+
+	public function pdf () {
+		return $this->consultar();
 	}
 
 	public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada='',
@@ -211,7 +290,7 @@ class Face {
 		$impuestos        = $valorConDRMonto*($this->empresa['iva']/100);
 
 		if ($aPrecioUnitario<>0)
-			$descuentotasa = ($aDescuento*100)/$aPrecioUnitario;
+			$descuentotasa = ($aDescuento*100)/$aPrecioUnitario/$aCantidad;
 		else 
 			$descuentotasa = 0;
 		
@@ -229,12 +308,38 @@ class Face {
       'ValorSinDR'     => [
 				'Precio' => number_format($valorSinDRPrecio, 4,'.',''),
 				'Monto'  => number_format($valorSinDRMonto, 4,'.',''),
-      ],
-      'ValorConDR'     => [
+      ]
+    ];
+
+		if($aDescuento>0) {
+
+    	$detalle['DescuentosYRecargos'] = [
+    		'SumaDeDescuentos' => number_format($descuento, 4,'.',''),
+    		'DescuentoORecargo' => [
+					'Operacion' => 'DESCUENTO',
+					'Servicio'  => 'ALLOWANCE_GLOBAL',
+					'Base'      => number_format($valorSinDRMonto, 4,'.',''),
+					'Tasa'      => number_format($descuentotasa, 4,'.',''),
+					'Monto'     => number_format($descuento, 4,'.','')
+    		]
+    	];
+    	$this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.','');
+
+    	$this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
+				'Operacion' => 'DESCUENTO',
+				'Servicio'  => 'ALLOWANCE_GLOBAL',
+				'Base'      => number_format($valorSinDRMonto, 4,'.',''),
+				'Tasa'      => number_format($descuentotasa, 4,'.',''),
+				'Monto'     => number_format($descuento, 4,'.','')
+  		];
+   	}
+
+    $detalle['ValorConDR'] = [
 				'Precio' => number_format($valorConDRPrecio, 4,'.',''),
 				'Monto'  => number_format($valorConDRMonto, 4,'.',''),
-      ],
-      'Impuestos' => [
+    ];
+
+    $detalle['Impuestos'] = [
 					'TotalDeImpuestos'      => number_format($impuestos, 4,'.',''),
 					'IngresosNetosGravados' => number_format($valorConDRMonto, 4,'.',''),
 					'TotalDeIVA'            => number_format($impuestos, 4,'.',''),
@@ -244,9 +349,9 @@ class Face {
 						'Tasa'  => $this->empresa['iva'],
 						'Monto' => number_format($impuestos, 4,'.','')
           ]
-      ],
-      'Categoria' => $aBienServicio
     ];
+    $detalle['Categoria'] = $aBienServicio;
+
     if (trim($aDescripcionAmpliada) <>'' || trim(substr($aDescripcion, 69))) {
     	$detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . ' ' . $aDescripcionAmpliada), 0, 999));
     }
@@ -260,18 +365,7 @@ class Face {
     	$detalle['TextosDePosicion'] = $textos;
     }
 
-    if($aDescuento>0) {
-    	$detalle['DescuentosYRecargos'] = [
-    		'SumaDeDescuentos' => number_format($descuento, 4,'.',''),
-    		'DescuentoORecargo' => [
-					'Operacion' => 'DESCUENTO',
-					'Servicio'  => 'ALLOWANCE_GLOBAL',
-					'Base'      => number_format($valorSinDRMonto, 4,'.',''),
-					'Tasa'      => number_format($descuentotasa, 4,'.',''),
-					'Monto'     => number_format($descuento, 4,'.','')
-    		]
-    	];
-   	}
+    
    	$this->detalles[] = $detalle;
    	 //['Detalle' => $detalle];
 	}
@@ -307,6 +401,28 @@ class Face {
 			}
 		}
 		$this->factura = array_merge($this->factura, $aParams);
+	}
+
+	public function setReimpresion($aParams){
+		$validos = ['serie', 'correlativo'];
+
+		foreach($aParams as $key => $val) {
+			if (!in_array($key, $validos)) {
+				dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+			}
+		}
+		$this->reimpresion = array_merge($this->reimpresion, $aParams);
+	}
+
+	public function setFormatos($aParams){
+		$validos = ['XML', 'PDF', 'HTML'];
+
+		foreach($aParams as $key) {
+			if (!in_array($key, $validos)) {
+				dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+			}
+		}
+		$this->empresa['formatos'] = trim(implode(' ', $aParams));
 	}
 
 	private function array_to_xml($student_info, &$xml_student_info) {
