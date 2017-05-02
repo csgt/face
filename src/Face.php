@@ -51,7 +51,7 @@ class Face {
 
 	private $detalles;
 	// private $descuentos = ['SumaDeDescuentos' => 0];
-	private $descuentosNKeys = 2;
+	private $descuentosNKeys = 1;
 	private $descuentos = [
 	  'SumaDeDescuentos' => 0,
 	];
@@ -230,7 +230,7 @@ class Face {
  		}
 	}
 
-	public function pdf() {
+	public function consultar () {
 		if ($this->empresa['test'])
 			$url = config('csgtface.testurl');
 		else
@@ -252,7 +252,7 @@ class Face {
 			'UserName'    => $username,
 			'Data1'       => $this->reimpresion['serie'],
 			'Data2'       => $this->reimpresion['correlativo'],
-			'Data3'       => 'PDF'
+			'Data3'       => 'XML PDF'
 			]	
 		]); 
 
@@ -261,11 +261,16 @@ class Face {
   	if ($result->Response->Result == false) {
   		throw new Exception($result->Response->Description);  	
   	}
-  	else {
-			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
-  		return $respuesta;
- 		}
 
+		return [
+			'xml' => base64_decode($result->ResponseData->ResponseData1),
+			'pdf' => $result->ResponseData->ResponseData3
+		];
+
+	}
+
+	public function pdf () {
+		return $this->consultar();
 	}
 
 	public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada='',
@@ -285,7 +290,7 @@ class Face {
 		$impuestos        = $valorConDRMonto*($this->empresa['iva']/100);
 
 		if ($aPrecioUnitario<>0)
-			$descuentotasa = ($aDescuento*100)/$aPrecioUnitario;
+			$descuentotasa = ($aDescuento*100)/$aPrecioUnitario/$aCantidad;
 		else 
 			$descuentotasa = 0;
 		
