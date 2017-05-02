@@ -325,13 +325,27 @@ class Face {
     	];
     	$this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.','');
 
-    	$this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
-				'Operacion' => 'DESCUENTO',
-				'Servicio'  => 'ALLOWANCE_GLOBAL',
-				'Base'      => number_format($valorSinDRMonto, 4,'.',''),
-				'Tasa'      => number_format($descuentotasa, 4,'.',''),
-				'Monto'     => number_format($descuento, 4,'.','')
-  		];
+			$tasaParaBusqueda = number_format($descuentotasa, 4,'.','');
+
+			$tasaFound = false;
+
+			foreach ($this->descuentos as $key => &$value) {
+				if (is_array($value) && $value['Tasa'] === $tasaParaBusqueda) {
+					$value['Base'] = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
+					$value['Monto'] = number_format(((float) $value['Monto']) + $descuento, 4, '.', '');
+					$tasaFound = true;
+				}
+			}
+
+			if (!$tasaFound) {
+				$this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
+					'Operacion' => 'DESCUENTO',
+					'Servicio'  => 'ALLOWANCE_GLOBAL',
+					'Base'      => number_format($valorSinDRMonto, 4,'.',''),
+					'Tasa'      => $tasaParaBusqueda,
+					'Monto'     => number_format($descuento, 4,'.','')
+				];
+			}
    	}
 
     $detalle['ValorConDR'] = [
