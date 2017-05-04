@@ -209,7 +209,9 @@ class Face {
 			$nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
 			$nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
 			$dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
-			$dir2     = $nameaddr[0]->getElementsByTagName('streetAddressTwo')[0]->nodeValue;
+
+			$dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
+			$dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
 
 			$cae  = $xmlDoc->getElementsByTagName('CAE');
 			$dcae = $cae[0]->getElementsByTagName('DCAE');
@@ -224,7 +226,7 @@ class Face {
 			$respuesta['documento'] = $documento;
 			$respuesta['firma']     = $firma;
 			$respuesta['nombre']    = $nombre;
-			$respuesta['direccion'] = trim($dir1 . ' ' . $dir2);
+			$respuesta['direccion'] = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
 			$respuesta['xml']       = $result->ResponseData->ResponseData1;
 			$respuesta['html']      = $result->ResponseData->ResponseData2;
 			$respuesta['pdf']       = $result->ResponseData->ResponseData3;
