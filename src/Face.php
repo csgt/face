@@ -148,7 +148,7 @@ class Face {
 
 		if($this->empresa['footer'] <> '') {
 			$x['TextosDePie'] =[
-        'Texto' => $this->empresa['footer'],
+        'Texto' => substr($this->empresa['footer'], 0, 1000)
 	    ];
 		}
 
@@ -157,10 +157,10 @@ class Face {
 
 		$xmlText = utf8_encode($xml->asXML());
 
-		 for ($i=0; $i<count($this->detalles); $i++ ) {
-		 	$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
-		 	$xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
-		 } 
+		for ($i=0; $i<count($this->detalles); $i++ ) {
+			$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
+			$xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
+		}
 		
 		return $this->sendXML($xmlText);
 	}
