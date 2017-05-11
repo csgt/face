@@ -489,12 +489,12 @@ class Face {
     foreach($student_info as $key => $value) {
       if(is_array($value)) {
         $key = is_numeric($key) ? "item$key" : $key;
-        $subnode = $xml_student_info->addChild("$key");
+        $subnode = $xml_student_info->addChild($key);
         $this->array_to_xml($value, $subnode);
       }
       else {
         $key = is_numeric($key) ? "item$key" : $key;
-        $xml_student_info->addChild("$key","$value");
+        $xml_student_info->addChild($key, htmlspecialchars($value));
       }
     }
 	}
