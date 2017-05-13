@@ -157,7 +157,7 @@ class Face {
 
 		$xmlText = utf8_encode($xml->asXML());
 
-		for ($i=0; $i<count($this->detalles); $i++ ) {
+		for ($i=count($this->detalles)-1; $i >= 0; $i-- ) {
 			$xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
 			$xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
 		}
