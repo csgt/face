@@ -141,7 +141,7 @@ class Face {
         ]
       ],
 			'Total'         => number_format($this->totales['valorConDRMonto'] + $this->totales['impuestos'],2,'.',''),
-			'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2),
+			'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2, true),
     ];
 
     $x['Totales'] = array_merge($x['Totales'], $arr);
