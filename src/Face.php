@@ -176,7 +176,10 @@ class Face {
 			$username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
 		} 
 
-		$soapClient = new SoapClient($url, ["trace" => true, ""]); 
+		$soapClient = new SoapClient($url, [
+			"trace" => true,
+			"keep_alive" => false
+		]); 
   	$info = $soapClient->__call("RequestTransaction", ["parameters" => [
 			'Requestor'   => $this->empresa['requestor'],
 			'Transaction' => 'CONVERT_NATIVE_XML',
