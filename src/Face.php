@@ -5,6 +5,7 @@ use DOMDocument;
 use SoapClient;
 use Exception;
 use SimpleXMLElement;
+use Log;
 
 class Face
 {
