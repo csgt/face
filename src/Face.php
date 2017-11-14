@@ -43,10 +43,10 @@ class Face
         'codigopais'             => 'GT',
         'nit'                    => '',
         'footer'                 => '',
-        'requestor'                             => '',
-        'usuario'                     => '',
-        'formatos'                             => 'XML',
-        'test'                                     => false,
+        'requestor'              => '',
+        'usuario'                => '',
+        'formatos'               => 'XML',
+        'test'                   => false,
     ];
 
     private $reimpresion = [
@@ -134,8 +134,8 @@ class Face
         }
 
         $arr = [
-      'SubTotalConDR' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-      'Impuestos'     => [
+            'SubTotalConDR' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
+            'Impuestos'     => [
                 'TotalDeImpuestos'      => number_format($this->totales['impuestos'], 4, '.', ''),
                 'IngresosNetosGravados' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
                 'TotalDeIVA'            => number_format($this->totales['impuestos'], 4, '.', ''),
@@ -144,18 +144,18 @@ class Face
                     'Base'  => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
                     'Tasa'  => $this->empresa['iva'],
                     'Monto' => number_format($this->totales['impuestos'], 4, '.', ''),
-        ]
-      ],
+                ]
+            ],
             'Total'         => number_format($this->totales['valorConDRMonto'] + $this->totales['impuestos'], 2, '.', ''),
-            'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2, true),
+            'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2, false),
     ];
 
         $x['Totales'] = array_merge($x['Totales'], $arr);
 
         if ($this->empresa['footer'] <> '') {
-            $x['TextosDePie'] =[
-        'Texto' => substr($this->empresa['footer'], 0, 1000)
-        ];
+            $x['TextosDePie'] = [
+                'Texto' => substr($this->empresa['footer'], 0, 1000)
+            ];
         }
 
         $xml = new SimpleXMLElement("<FactDocGT xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.fact.com.mx/schema/gt\" xsi:schemaLocation=\"http://www.fact.com.mx/schema/gt http://www.mysuitemex.com/fact/schema/fx_2013_gt_3.xsd\"></FactDocGT>");
@@ -198,7 +198,7 @@ class Face
             'Data1'       => $aXml,
             'Data2'       => $this->empresa['formatos'],
             'Data3'       => ''
-    ]]);
+        ]]);
 
         $result = $info->RequestTransactionResult;
 
@@ -310,15 +310,15 @@ class Face
         }
 
         $this->items[] = [
-            'cantidad' => $aCantidad,
-            'precio' => $aPrecioUnitario,
-            'descripcion' => $aDescripcion,
+            'cantidad'            => $aCantidad,
+            'precio'              => $aPrecioUnitario,
+            'descripcion'         => $aDescripcion,
             'descripcionAmpliada' => $aDescripcionAmpliada,
-            'tipo' => $aBienServicio,
-            'descuento' => $aDescuento,
-            'extras' => $aExtras,
-            'unidad' => $aUnidadMedida,
-            'ean' => $aCodigoEAN
+            'tipo'                => $aBienServicio,
+            'descuento'           => $aDescuento,
+            'extras'              => $aExtras,
+            'unidad'              => $aUnidadMedida,
+            'ean'                 => $aCodigoEAN
         ];
     }
 
@@ -326,15 +326,15 @@ class Face
     {
         $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
         foreach ($this->items as $item) {
-            $aCantidad = $item['cantidad'];
-            $aPrecioUnitario = $item['precio'];
-            $aDescripcion = $item['descripcion'];
+            $aCantidad            = $item['cantidad'];
+            $aPrecioUnitario      = $item['precio'];
+            $aDescripcion         = $item['descripcion'];
             $aDescripcionAmpliada = $item['descripcionAmpliada'];
-            $aBienServicio = $item['tipo'];
-            $aDescuento = $item['descuento'];
-            $aExtras = $item['extras'];
-            $aUnidadMedida = $item['unidad'];
-            $aCodigoEAN = $item['ean'];
+            $aBienServicio        = $item['tipo'];
+            $aDescuento           = $item['descuento'];
+            $aExtras              = $item['extras'];
+            $aUnidadMedida        = $item['unidad'];
+            $aCodigoEAN           = $item['ean'];
 
             if ($aDescripcion=='') {
                 $aDescripcion = 'Por su compra';
@@ -404,7 +404,7 @@ class Face
 
                 foreach ($this->descuentos as $key => &$value) {
                     if (is_array($value) && $value['Tasa'] === $tasaParaBusqueda) {
-                        $value['Base'] = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
+                        $value['Base']  = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
                         $value['Monto'] = number_format(((float) $value['Monto']) + $descuento, 4, '.', '');
                         $tasaFound = true;
                     }
@@ -422,20 +422,20 @@ class Face
             }
 
             $detalle['ValorConDR'] = [
-                    'Precio' => number_format($valorConDRPrecio, 4, '.', ''),
-                    'Monto'  => number_format($valorConDRMonto, 4, '.', ''),
+                'Precio' => number_format($valorConDRPrecio, 4, '.', ''),
+                'Monto'  => number_format($valorConDRMonto, 4, '.', ''),
             ];
 
             $detalle['Impuestos'] = [
-                        'TotalDeImpuestos'      => number_format($impuestos, 4, '.', ''),
-                        'IngresosNetosGravados' => number_format($valorConDRMonto, 4, '.', ''),
-                        'TotalDeIVA'            => number_format($impuestos, 4, '.', ''),
-                        'Impuesto'              => [
-                            'Tipo'  => 'IVA',
-                            'Base'  => number_format($valorConDRMonto, 4, '.', ''),
-                            'Tasa'  => $this->empresa['iva'],
-                            'Monto' => number_format($impuestos, 4, '.', '')
-                        ]
+                'TotalDeImpuestos'      => number_format($impuestos, 4, '.', ''),
+                'IngresosNetosGravados' => number_format($valorConDRMonto, 4, '.', ''),
+                'TotalDeIVA'            => number_format($impuestos, 4, '.', ''),
+                'Impuesto'              => [
+                    'Tipo'  => 'IVA',
+                    'Base'  => number_format($valorConDRMonto, 4, '.', ''),
+                    'Tasa'  => $this->empresa['iva'],
+                    'Monto' => number_format($impuestos, 4, '.', '')
+                ]
             ];
             $detalle['Categoria'] = $aBienServicio;
 
