@@ -206,7 +206,7 @@ class Face
             Log::error($aXml);
             throw new Exception($result->Response->Description);
         } else {
-            //dd($result->ResponseData);
+            //Log::info(json_encode($result->ResponseData));
             $xml = $result->ResponseData->ResponseData1;
 
             $xmlDoc = new DOMDocument();
@@ -241,6 +241,36 @@ class Face
             $respuesta['xml']       = $result->ResponseData->ResponseData1;
             $respuesta['html']      = $result->ResponseData->ResponseData2;
             $respuesta['pdf']       = $result->ResponseData->ResponseData3;
+
+            //Hacer el request de el GUID
+            $info = $soapClient->__call("RequestTransaction", ["parameters" => [
+                'Requestor'   => $this->empresa['requestor'],
+                'Transaction' => 'LOOKUP_ISSUED_BATCH_AND_SERIAL',
+                'Country'     => $this->empresa['codigopais'],
+                'Entity'      => $this->fixnit($this->empresa['nit'], true),
+                'User'        => $this->empresa['requestor'],
+                'UserName'    => $username,
+                'Data1'       => $serie,
+                'Data2'       => $documento,
+                'Data3'       => ''
+            ]]);
+
+            $result  = $info->RequestTransactionResult;
+            $cuantos = $result->ResponseData->ResponseData1;
+
+            if ($cuantos > 0) {
+                $xml     = $result->ResponseData->ResponseData2;
+                $xmlDoc = new DOMDocument();
+                $xmlDoc->loadXML(base64_decode($xml));
+
+                $docsfound = $xmlDoc->getElementsByTagName('DocsFoundBy');
+                $docs = $docsfound[0]->getElementsByTagName('doc');
+                $uuids = $docs[0]->getElementsByTagName('uuid');
+
+                $respuesta['uuid'] = $uuids[0]->nodeValue;
+            } else {
+                $respuesta['uuid'] = 'no-encontrado';
+            }
 
             return $respuesta;
         }
