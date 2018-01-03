@@ -298,8 +298,8 @@ class Face
             'Entity'      => $this->fixnit($this->empresa['nit'], true),
             'User'        => $this->empresa['requestor'],
             'UserName'    => $username,
-            'Data1'       => $this->reimpresion['serie'],
-            'Data2'       => $this->reimpresion['correlativo'],
+            'Data1'       => $this->reimpresion['uuid'],
+            'Data2'       => '',
             'Data3'       => 'XML PDF'
             ]
         ]);
@@ -322,15 +322,15 @@ class Face
     }
 
     public function setDetalle(
-        $aCantidad,
-        $aPrecioUnitario,
-        $aDescripcion,
-        $aDescripcionAmpliada='',
-        $aBienServicio='BIEN',
-        $aDescuento=0,
-        $aExtras='',
-        $aUnidadMedida='Un',
-        $aCodigoEAN='00000000000000'
+            $aCantidad,
+            $aPrecioUnitario,
+            $aDescripcion,
+            $aDescripcionAmpliada='',
+            $aBienServicio='BIEN',
+            $aDescuento=0,
+            $aExtras='',
+            $aUnidadMedida='Un',
+            $aCodigoEAN='00000000000000'
     ) {
         if ((float)$aCantidad==0.0) {
             return false;
@@ -524,7 +524,7 @@ class Face
 
     public function setReimpresion($aParams)
     {
-        $validos = ['serie', 'correlativo'];
+        $validos = ['uuid'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
