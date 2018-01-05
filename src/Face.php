@@ -11,8 +11,9 @@ class Face
 {
     private $resolucion = [
         'tipo'                   => 'FACE63',
+        'serie'                  => '',
+        'correlativo'            => 0,
         'numeroautorizacion'     => '',
-        'fechaemision'           => '',
         'fecharesolucion'        => '',
         'rangoinicialautorizado' => 0,
         'rangofinalautorizado'   => 0,
@@ -88,8 +89,24 @@ class Face
             throw new Exception('Se debe agregar al menos un detalle a la factura');
         }
 
-        $x = [
-            'Version' => 3,
+        $x = ['Version' => 3];
+
+        if ($this->resolucion['correlativo'] !== 0) {
+            $arr = [
+                'AsignacionSolicitada' => [
+                    'Serie'                  => $this->resolucion['serie'],
+                    'NumeroDocumento'        => $this->resolucion['correlativo'],
+                    'FechaEmision'           => date_create()->format('Y-m-d\TH:i:s'),
+                    'NumeroAutorizacion'     => $this->resolucion['numeroautorizacion'],
+                    'FechaResolucion'        => $this->resolucion['fecharesolucion'],
+                    'RangoInicialAutorizado' => $this->resolucion['rangoinicialautorizado'],
+                    'RangoFinalAutorizado'   => $this->resolucion['rangofinalautorizado']
+                ]
+            ];
+            $x = array_merge($x, $arr);
+        }
+
+        $arr = [
             'Encabezado' => [
                 'TipoActivo'              => $this->resolucion['tipo'],
                 'CodigoDeMoneda'          => $this->empresa['moneda'],
@@ -106,8 +123,10 @@ class Face
             'Comprador' => [
                 'Nit'    => $this->fixnit($this->factura['nit']),
                 'Idioma' => 'es'
-        ],
+            ],
         ];
+
+        $x = array_merge($x, $arr);
 
         if ($this->factura['nit'] == 'CF') {
             $x['Comprador'] = [
@@ -206,6 +225,7 @@ class Face
             Log::error($aXml);
             throw new Exception($result->Response->Description);
         } else {
+            $uuid = $result->Response->Identifier->DocumentGUID;
             //Log::info(json_encode($result->ResponseData));
             $xml = $result->ResponseData->ResponseData1;
 
@@ -233,6 +253,7 @@ class Face
             $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
 
             $respuesta['id']        = $id;
+            $respuesta['uuid']      = $uuid;
             $respuesta['serie']     = $serie;
             $respuesta['documento'] = $documento;
             $respuesta['firma']     = $firma;
@@ -242,35 +263,35 @@ class Face
             $respuesta['html']      = $result->ResponseData->ResponseData2;
             $respuesta['pdf']       = $result->ResponseData->ResponseData3;
 
-            //Hacer el request de el GUID
-            $info = $soapClient->__call("RequestTransaction", ["parameters" => [
-                'Requestor'   => $this->empresa['requestor'],
-                'Transaction' => 'LOOKUP_ISSUED_BATCH_AND_SERIAL',
-                'Country'     => $this->empresa['codigopais'],
-                'Entity'      => $this->fixnit($this->empresa['nit'], true),
-                'User'        => $this->empresa['requestor'],
-                'UserName'    => $username,
-                'Data1'       => $serie,
-                'Data2'       => $documento,
-                'Data3'       => ''
-            ]]);
+            // //Hacer el request de el GUID
+            // $info = $soapClient->__call("RequestTransaction", ["parameters" => [
+            //     'Requestor'   => $this->empresa['requestor'],
+            //     'Transaction' => 'LOOKUP_ISSUED_BATCH_AND_SERIAL',
+            //     'Country'     => $this->empresa['codigopais'],
+            //     'Entity'      => $this->fixnit($this->empresa['nit'], true),
+            //     'User'        => $this->empresa['requestor'],
+            //     'UserName'    => $username,
+            //     'Data1'       => $serie,
+            //     'Data2'       => $documento,
+            //     'Data3'       => ''
+            // ]]);
 
-            $result  = $info->RequestTransactionResult;
-            $cuantos = $result->ResponseData->ResponseData1;
+            // $result  = $info->RequestTransactionResult;
+            // $cuantos = $result->ResponseData->ResponseData1;
 
-            if ($cuantos > 0) {
-                $xml     = $result->ResponseData->ResponseData2;
-                $xmlDoc = new DOMDocument();
-                $xmlDoc->loadXML(base64_decode($xml));
+            // if ($cuantos > 0) {
+            //     $xml     = $result->ResponseData->ResponseData2;
+            //     $xmlDoc = new DOMDocument();
+            //     $xmlDoc->loadXML(base64_decode($xml));
 
-                $docsfound = $xmlDoc->getElementsByTagName('DocsFoundBy');
-                $docs = $docsfound[0]->getElementsByTagName('doc');
-                $uuids = $docs[0]->getElementsByTagName('uuid');
+            //     $docsfound = $xmlDoc->getElementsByTagName('DocsFoundBy');
+            //     $docs = $docsfound[0]->getElementsByTagName('doc');
+            //     $uuids = $docs[0]->getElementsByTagName('uuid');
 
-                $respuesta['uuid'] = $uuids[0]->nodeValue;
-            } else {
-                $respuesta['uuid'] = 'no-encontrado';
-            }
+            //     $respuesta['uuid'] = $uuids[0]->nodeValue;
+            // } else {
+            //     $respuesta['uuid'] = 'no-encontrado';
+            // }
 
             return $respuesta;
         }
@@ -488,7 +509,7 @@ class Face
 
     public function setResolucion($aParams)
     {
-        $validos = ['tipo','numeroautorizacion','fechaemision','fecharesolucion','rangoinicialautorizado', 'rangofinalautorizado'];
+        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion','fecharesolucion','rangoinicialautorizado', 'rangofinalautorizado'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
