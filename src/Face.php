@@ -55,6 +55,12 @@ class Face
         'correlativo' => ''
     ];
 
+    private $anulacion = [
+        'uuid'               => '',
+        'numeroautorizacion' => '',
+        'razon'              => 'Anulación'
+    ];
+
     private $items = [];
     private $detalles;
     // private $descuentos = ['SumaDeDescuentos' => 0];
@@ -223,6 +229,7 @@ class Face
 
         if ($result->Response->Result == false) {
             Log::error($aXml);
+            Log::error($result->Response);
             throw new Exception($result->Response->Description);
         } else {
             $uuid = $result->Response->Identifier->DocumentGUID;
@@ -337,22 +344,63 @@ class Face
         ];
     }
 
+    public function anular()
+    {
+        if ($this->anulacion['uuid'] == '') {
+            throw new Exception('El identificador único no puede ser vacío. Se debe correr el método setAnulacion');
+        }
+
+        if ($this->anulacion['numeroautorizacion'] == '') {
+            throw new Exception('El número de autorización de resolución es requerido. Se debe correr el método setAnulacion');
+        }
+
+        if ($this->empresa['test']) {
+            $url = config('csgtface.testurl');
+        } else {
+            $url = config('csgtface.url');
+        }
+
+        $username = $this->empresa['usuario'];
+        if ($this->resolucion['proveedorface'] == 'gyt') {
+            $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+        }
+
+        $soapClient = new SoapClient($url, ["trace" => true, ""]);
+
+        $parameters = [
+            'Requestor'   => $this->empresa['requestor'],
+            'Transaction' => 'CANCEL_XML',
+            'Country'     => $this->empresa['codigopais'],
+            'Entity'      => $this->fixnit($this->empresa['nit'], true),
+            'User'        => $this->empresa['requestor'],
+            'UserName'    => $username,
+            'Data1'       => $this->anulacion['uuid'],
+            'Data2'       => 'XML',
+            'Data3'       => $this->anulacion['numeroautorizacion']
+        ];
+        Log::info($parameters);
+
+        $info = $soapClient->__call("RequestTransaction", ["parameters" => $parameters]);
+
+        $result = $info->RequestTransactionResult;
+
+        if ($result->Response->Result == false) {
+            throw new Exception($result->Response->Data);
+        }
+
+        return [
+            'xml' => base64_decode($result->ResponseData->ResponseData1)
+        ];
+    }
+
     public function pdf()
     {
         return $this->consultar();
     }
 
-    public function setDetalle(
-            $aCantidad,
-            $aPrecioUnitario,
-            $aDescripcion,
-            $aDescripcionAmpliada='',
-            $aBienServicio='BIEN',
-            $aDescuento=0,
-            $aExtras='',
-            $aUnidadMedida='Un',
-            $aCodigoEAN='00000000000000'
-    ) {
+    //Setters
+    public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada='', $aBienServicio='BIEN', $aDescuento=0, $aExtras='', $aUnidadMedida='Un', $aCodigoEAN='00000000000000')
+    {
         if ((float)$aCantidad==0.0) {
             return false;
         }
@@ -373,6 +421,79 @@ class Face
         ];
     }
 
+    public function setResolucion($aParams)
+    {
+        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion','fecharesolucion','rangoinicialautorizado', 'rangofinalautorizado'];
+
+        foreach ($aParams as $key => $val) {
+            if (!in_array($key, $validos)) {
+                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+            }
+        }
+        $this->resolucion = array_merge($this->resolucion, $aParams);
+    }
+
+    public function setEmpresa($aParams)
+    {
+        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda' , 'iva', 'codigopais', 'nit', 'footer','requestor','usuario','test'];
+
+        foreach ($aParams as $key => $val) {
+            if (!in_array($key, $validos)) {
+                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+            }
+        }
+        $this->empresa = array_merge($this->empresa, $aParams);
+    }
+
+    public function setFactura($aParams)
+    {
+        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal'];
+
+        foreach ($aParams as $key => $val) {
+            if (!in_array($key, $validos)) {
+                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+            }
+        }
+        $this->factura = array_merge($this->factura, $aParams);
+    }
+
+    public function setReimpresion($aParams)
+    {
+        $validos = ['uuid'];
+
+        foreach ($aParams as $key => $val) {
+            if (!in_array($key, $validos)) {
+                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+            }
+        }
+        $this->reimpresion = array_merge($this->reimpresion, $aParams);
+    }
+
+    public function setAnulacion($aParams)
+    {
+        $validos = ['uuid', 'numeroautorizacion', 'razon'];
+
+        foreach ($aParams as $key => $val) {
+            if (!in_array($key, $validos)) {
+                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+            }
+        }
+        $this->anulacion = array_merge($this->anulacion, $aParams);
+    }
+
+    public function setFormatos($aParams)
+    {
+        $validos = ['XML', 'PDF', 'HTML'];
+
+        foreach ($aParams as $key) {
+            if (!in_array($key, $validos)) {
+                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
+            }
+        }
+        $this->empresa['formatos'] = trim(implode(' ', $aParams));
+    }
+
+    //Funciones privadas
     private function generarDetalles()
     {
         $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
@@ -506,67 +627,6 @@ class Face
             $this->detalles[] = $detalle;
         }
     }
-
-    public function setResolucion($aParams)
-    {
-        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion','fecharesolucion','rangoinicialautorizado', 'rangofinalautorizado'];
-
-        foreach ($aParams as $key => $val) {
-            if (!in_array($key, $validos)) {
-                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
-            }
-        }
-        $this->resolucion = array_merge($this->resolucion, $aParams);
-    }
-
-    public function setEmpresa($aParams)
-    {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda' , 'iva', 'codigopais', 'nit', 'footer','requestor','usuario','test'];
-
-        foreach ($aParams as $key => $val) {
-            if (!in_array($key, $validos)) {
-                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
-            }
-        }
-        $this->empresa = array_merge($this->empresa, $aParams);
-    }
-
-    public function setFactura($aParams)
-    {
-        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal'];
-
-        foreach ($aParams as $key => $val) {
-            if (!in_array($key, $validos)) {
-                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
-            }
-        }
-        $this->factura = array_merge($this->factura, $aParams);
-    }
-
-    public function setReimpresion($aParams)
-    {
-        $validos = ['uuid'];
-
-        foreach ($aParams as $key => $val) {
-            if (!in_array($key, $validos)) {
-                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
-            }
-        }
-        $this->reimpresion = array_merge($this->reimpresion, $aParams);
-    }
-
-    public function setFormatos($aParams)
-    {
-        $validos = ['XML', 'PDF', 'HTML'];
-
-        foreach ($aParams as $key) {
-            if (!in_array($key, $validos)) {
-                dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
-            }
-        }
-        $this->empresa['formatos'] = trim(implode(' ', $aParams));
-    }
-
     private function array_to_xml($student_info, &$xml_student_info)
     {
         foreach ($student_info as $key => $value) {
