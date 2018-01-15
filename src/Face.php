@@ -56,8 +56,8 @@ class Face
     ];
 
     private $anulacion = [
-        'uuid'               => '',
-        'numeroautorizacion' => '',
+        'serie'              => '',
+        'correlativo'        => '',
         'razon'              => 'Anulación'
     ];
 
@@ -346,12 +346,12 @@ class Face
 
     public function anular()
     {
-        if ($this->anulacion['uuid'] == '') {
-            throw new Exception('El identificador único no puede ser vacío. Se debe correr el método setAnulacion');
+        if ($this->anulacion['serie'] == '') {
+            throw new Exception('La serie es requerida. Se debe correr el método setAnulacion');
         }
 
-        if ($this->anulacion['numeroautorizacion'] == '') {
-            throw new Exception('El número de autorización de resolución es requerido. Se debe correr el método setAnulacion');
+        if ($this->anulacion['correlativo'] == '') {
+            throw new Exception('El número de correlativo es requerido. Se debe correr el método setAnulacion');
         }
 
         if ($this->empresa['test']) {
@@ -374,9 +374,9 @@ class Face
             'Entity'      => $this->fixnit($this->empresa['nit'], true),
             'User'        => $this->empresa['requestor'],
             'UserName'    => $username,
-            'Data1'       => $this->anulacion['uuid'],
-            'Data2'       => 'XML',
-            'Data3'       => $this->anulacion['numeroautorizacion']
+            'Data1'       => $this->anulacion['serie'],
+            'Data2'       => $this->anulacion['correlativo'],
+            'Data3'       => 'XML'
         ];
         Log::info($parameters);
 
@@ -471,7 +471,7 @@ class Face
 
     public function setAnulacion($aParams)
     {
-        $validos = ['uuid', 'numeroautorizacion', 'razon'];
+        $validos = ['serie', 'correlativo', 'razon'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
