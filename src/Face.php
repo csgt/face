@@ -229,7 +229,7 @@ class Face
 
         if ($result->Response->Result == false) {
             Log::error($aXml);
-            Log::error($result->Response);
+            Log::error(json_encode($result->Response));
             throw new Exception($result->Response->Description);
         } else {
             $uuid = $result->Response->Identifier->DocumentGUID;
