@@ -1,11 +1,12 @@
-<?php  namespace Csgt\Face;
+<?php
+namespace Csgt\Face;
 
-use Csgt\Components\Components;
-use DOMDocument;
-use SoapClient;
-use Exception;
-use SimpleXMLElement;
 use Log;
+use Exception;
+use SoapClient;
+use DOMDocument;
+use SimpleXMLElement;
+use Csgt\Components\Components;
 
 class Face
 {
@@ -24,7 +25,7 @@ class Face
         'referenciainterna' => 0,
         'nit'               => '',
         'nombre'            => '',
-        'direccion'         => ''
+        'direccion'         => '',
     ];
 
     private $totales = [
@@ -32,7 +33,7 @@ class Face
         'descuento'       => 0,
         'valorSinDRMonto' => 0,
         'valorConDRMonto' => 0,
-        'impuestos'       => 0
+        'impuestos'       => 0,
     ];
 
     private $empresa = [
@@ -52,21 +53,21 @@ class Face
 
     private $reimpresion = [
         'serie'       => '',
-        'correlativo' => ''
+        'correlativo' => '',
     ];
 
     private $anulacion = [
-        'serie'              => '',
-        'correlativo'        => '',
-        'razon'              => 'Anulación'
+        'serie'       => '',
+        'correlativo' => '',
+        'razon'       => 'Anulación',
     ];
 
     private $items = [];
     private $detalles;
     // private $descuentos = ['SumaDeDescuentos' => 0];
     private $descuentosNKeys = 1;
-    private $descuentos = [
-      'SumaDeDescuentos' => 0,
+    private $descuentos      = [
+        'SumaDeDescuentos' => 0,
     ];
 
     public function generar()
@@ -106,8 +107,8 @@ class Face
                     'NumeroAutorizacion'     => $this->resolucion['numeroautorizacion'],
                     'FechaResolucion'        => $this->resolucion['fecharesolucion'],
                     'RangoInicialAutorizado' => $this->resolucion['rangoinicialautorizado'],
-                    'RangoFinalAutorizado'   => $this->resolucion['rangofinalautorizado']
-                ]
+                    'RangoFinalAutorizado'   => $this->resolucion['rangofinalautorizado'],
+                ],
             ];
             $x = array_merge($x, $arr);
         }
@@ -120,15 +121,15 @@ class Face
                 'InformacionDeRegimenIsr' => $this->empresa['regimen'],
                 'ReferenciaInterna'       => $this->factura['referenciainterna'],
             ],
-            'Vendedor' => [
+            'Vendedor'   => [
                 'Nit'                     => $this->fixnit($this->empresa['nit'], true),
                 'Idioma'                  => 'es',
                 'CodigoDeEstablecimiento' => $this->empresa['codigoestablecimiento'],
                 'DispositivoElectronico'  => $this->empresa['dispositivoelectronico'],
             ],
-            'Comprador' => [
+            'Comprador'  => [
                 'Nit'    => $this->fixnit($this->factura['nit']),
-                'Idioma' => 'es'
+                'Idioma' => 'es',
             ],
         ];
 
@@ -137,49 +138,49 @@ class Face
         if ($this->factura['nit'] == 'CF') {
             $x['Comprador'] = [
                 'Nit'                => $this->factura['nit'],
-                'NombreComercial'    => ($this->factura['nombre'] == ''? 'CONSUMIDOR FINAL': $this->factura['nombre']),
+                'NombreComercial'    => ($this->factura['nombre'] == '' ? 'CONSUMIDOR FINAL' : $this->factura['nombre']),
                 'DireccionComercial' => [
-                    'Direccion1'   => ($this->factura['direccion'] == ''? 'CIUDAD': $this->factura['direccion']),
+                    'Direccion1'   => ($this->factura['direccion'] == '' ? 'CIUDAD' : $this->factura['direccion']),
                     'Direccion2'   => '.',
                     'Municipio'    => 'GUATEMALA',
                     'Departamento' => 'GUATEMALA',
-                    'CodigoDePais' => 'GT'
+                    'CodigoDePais' => 'GT',
                 ],
-                'Idioma' => 'es'
+                'Idioma'             => 'es',
             ];
         }
         $x['Detalles'] = $this->detalles;
 
         $x['Totales'] = [
-              'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'], 4, '.', '')
+            'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'], 4, '.', ''),
         ];
 
-        if (count($this->descuentos)>$this->descuentosNKeys) {
+        if (count($this->descuentos) > $this->descuentosNKeys) {
             $x['Totales']['DescuentosYRecargos'] = $this->descuentos;
         }
 
         $arr = [
-              'SubTotalConDR' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-              'Impuestos'     => [
-                    'TotalDeImpuestos'      => number_format($this->totales['impuestos'], 4, '.', ''),
-                    'IngresosNetosGravados' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-                    'TotalDeIVA'            => number_format($this->totales['impuestos'], 4, '.', ''),
-                    'Impuesto'              => [
-                        'Tipo'  => 'IVA',
-                        'Base'  => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-                        'Tasa'  => $this->empresa['iva'],
-                        'Monto' => number_format($this->totales['impuestos'], 4, '.', ''),
-                    ]
-              ],
+            'SubTotalConDR' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
+            'Impuestos'     => [
+                'TotalDeImpuestos'      => number_format($this->totales['impuestos'], 4, '.', ''),
+                'IngresosNetosGravados' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
+                'TotalDeIVA'            => number_format($this->totales['impuestos'], 4, '.', ''),
+                'Impuesto'              => [
+                    'Tipo'  => 'IVA',
+                    'Base'  => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
+                    'Tasa'  => $this->empresa['iva'],
+                    'Monto' => number_format($this->totales['impuestos'], 4, '.', ''),
+                ],
+            ],
             'Total'         => number_format($this->totales['valorConDRMonto'] + $this->totales['impuestos'], 2, '.', ''),
             'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2, false),
         ];
 
         $x['Totales'] = array_merge($x['Totales'], $arr);
 
-        if ($this->empresa['footer'] <> '') {
-            $x['TextosDePie'] =[
-                'Texto' => substr($this->empresa['footer'], 0, 1000)
+        if ($this->empresa['footer'] != '') {
+            $x['TextosDePie'] = [
+                'Texto' => substr($this->empresa['footer'], 0, 1000),
             ];
         }
 
@@ -188,7 +189,7 @@ class Face
 
         $xmlText = utf8_encode($xml->asXML());
 
-        for ($i=count($this->detalles)-1; $i >= 0; $i--) {
+        for ($i = count($this->detalles) - 1; $i >= 0; $i--) {
             $xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
             $xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
         }
@@ -210,8 +211,8 @@ class Face
         }
 
         $soapClient = new SoapClient($url, [
-            "trace" => true,
-            "keep_alive" => false
+            "trace"      => true,
+            "keep_alive" => false,
         ]);
         $info = $soapClient->__call("RequestTransaction", ["parameters" => [
             'Requestor'   => $this->empresa['requestor'],
@@ -222,7 +223,7 @@ class Face
             'UserName'    => $username,
             'Data1'       => $aXml,
             'Data2'       => $this->empresa['formatos'],
-            'Data3'       => ''
+            'Data3'       => '',
         ]]);
 
         $result = $info->RequestTransactionResult;
@@ -328,8 +329,8 @@ class Face
             'UserName'    => $username,
             'Data1'       => $this->reimpresion['uuid'],
             'Data2'       => '',
-            'Data3'       => 'XML PDF'
-            ]
+            'Data3'       => 'XML PDF',
+        ],
         ]);
 
         $result = $info->RequestTransactionResult;
@@ -340,7 +341,7 @@ class Face
 
         return [
             'xml' => base64_decode($result->ResponseData->ResponseData1),
-            'pdf' => $result->ResponseData->ResponseData3
+            'pdf' => $result->ResponseData->ResponseData3,
         ];
     }
 
@@ -376,7 +377,7 @@ class Face
             'UserName'    => $username,
             'Data1'       => $this->anulacion['serie'],
             'Data2'       => $this->anulacion['correlativo'],
-            'Data3'       => 'XML'
+            'Data3'       => 'XML',
         ];
         Log::info($parameters);
 
@@ -389,7 +390,7 @@ class Face
         }
 
         return [
-            'xml' => base64_decode($result->ResponseData->ResponseData1)
+            'xml' => base64_decode($result->ResponseData->ResponseData1),
         ];
     }
 
@@ -399,31 +400,31 @@ class Face
     }
 
     //Setters
-    public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada='', $aBienServicio='BIEN', $aDescuento=0, $aExtras='', $aUnidadMedida='Un', $aCodigoEAN='00000000000000')
+    public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada = '', $aBienServicio = 'BIEN', $aDescuento = 0, $aExtras = '', $aUnidadMedida = 'Un', $aCodigoEAN = '00000000000000')
     {
-        if ((float)$aCantidad==0.0) {
+        if ((float) $aCantidad == 0.0) {
             return false;
         }
-        if (($aBienServicio <> 'BIEN') && ($aBienServicio <> 'SERVICIO')) {
+        if (($aBienServicio != 'BIEN') && ($aBienServicio != 'SERVICIO')) {
             return false;
         }
 
         $this->items[] = [
-            'cantidad' => $aCantidad,
-            'precio' => $aPrecioUnitario,
-            'descripcion' => $aDescripcion,
+            'cantidad'            => $aCantidad,
+            'precio'              => $aPrecioUnitario,
+            'descripcion'         => $aDescripcion,
             'descripcionAmpliada' => $aDescripcionAmpliada,
-            'tipo' => $aBienServicio,
-            'descuento' => $aDescuento,
-            'extras' => $aExtras,
-            'unidad' => $aUnidadMedida,
-            'ean' => $aCodigoEAN
+            'tipo'                => $aBienServicio,
+            'descuento'           => $aDescuento,
+            'extras'              => $aExtras,
+            'unidad'              => $aUnidadMedida,
+            'ean'                 => $aCodigoEAN,
         ];
     }
 
     public function setResolucion($aParams)
     {
-        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion','fecharesolucion','rangoinicialautorizado', 'rangofinalautorizado'];
+        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion', 'fecharesolucion', 'rangoinicialautorizado', 'rangofinalautorizado'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -435,7 +436,7 @@ class Face
 
     public function setEmpresa($aParams)
     {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda' , 'iva', 'codigopais', 'nit', 'footer','requestor','usuario','test'];
+        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -498,25 +499,25 @@ class Face
     {
         $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
         foreach ($this->items as $item) {
-            $aCantidad = $item['cantidad'];
-            $aPrecioUnitario = $item['precio'];
-            $aDescripcion = $item['descripcion'];
+            $aCantidad            = $item['cantidad'];
+            $aPrecioUnitario      = $item['precio'];
+            $aDescripcion         = $item['descripcion'];
             $aDescripcionAmpliada = $item['descripcionAmpliada'];
-            $aBienServicio = $item['tipo'];
-            $aDescuento = $item['descuento'];
-            $aExtras = $item['extras'];
-            $aUnidadMedida = $item['unidad'];
-            $aCodigoEAN = $item['ean'];
+            $aBienServicio        = $item['tipo'];
+            $aDescuento           = $item['descuento'];
+            $aExtras              = $item['extras'];
+            $aUnidadMedida        = $item['unidad'];
+            $aCodigoEAN           = $item['ean'];
 
-            if ($aDescripcion=='') {
+            if ($aDescripcion == '') {
                 $aDescripcion = 'Por su compra';
             }
 
-            $factorIVA        = 1+($this->empresa['iva']/100);
-            $monto            = $aPrecioUnitario*$aCantidad;
+            $factorIVA = 1 + ($this->empresa['iva'] / 100);
+            $monto     = $aPrecioUnitario * $aCantidad;
 
             if ($aPrecioUnitario > 0 && $descuentoGlobal > 0) {
-                $resta = $monto - $aDescuento;
+                $resta                  = $monto - $aDescuento;
                 $porcionDescuentoGlobal = 0;
                 if ($descuentoGlobal >= $resta) {
                     $porcionDescuentoGlobal = $resta;
@@ -527,12 +528,12 @@ class Face
                 $aDescuento += $porcionDescuentoGlobal;
             }
 
-            $descuento        = $aDescuento/$factorIVA;
-            $valorSinDRPrecio = $aPrecioUnitario/$factorIVA;
-            $valorSinDRMonto  = $valorSinDRPrecio*$aCantidad;
-            $valorConDRMonto  = ($monto/$factorIVA)-$descuento;
-            $valorConDRPrecio = $valorConDRMonto/$aCantidad;
-            $impuestos        = $valorConDRMonto*($this->empresa['iva']/100);
+            $descuento        = $aDescuento / $factorIVA;
+            $valorSinDRPrecio = $aPrecioUnitario / $factorIVA;
+            $valorSinDRMonto  = $valorSinDRPrecio * $aCantidad;
+            $valorConDRMonto  = ($monto / $factorIVA) - $descuento;
+            $valorConDRPrecio = $valorConDRMonto / $aCantidad;
+            $impuestos        = $valorConDRMonto * ($this->empresa['iva'] / 100);
 
             if ($aPrecioUnitario > 0) {
                 $descuentotasa = $aDescuento * 100 / $aPrecioUnitario / $aCantidad;
@@ -540,11 +541,11 @@ class Face
                 $descuentotasa = 0;
             }
 
-            $this->totales['monto']           += $monto;
-            $this->totales['descuento']       += $descuento;
+            $this->totales['monto'] += $monto;
+            $this->totales['descuento'] += $descuento;
             $this->totales['valorSinDRMonto'] += $valorSinDRMonto;
             $this->totales['valorConDRMonto'] += $valorConDRMonto;
-            $this->totales['impuestos']       += $impuestos;
+            $this->totales['impuestos'] += $impuestos;
 
             $detalle = [
                 'Descripcion'    => trim(substr($aDescripcion, 0, 69)),
@@ -554,19 +555,19 @@ class Face
                 'ValorSinDR'     => [
                     'Precio' => number_format($valorSinDRPrecio, 4, '.', ''),
                     'Monto'  => number_format($valorSinDRMonto, 4, '.', ''),
-                ]
+                ],
             ];
 
-            if ($aDescuento>0) {
+            if ($aDescuento > 0) {
                 $detalle['DescuentosYRecargos'] = [
-                    'SumaDeDescuentos' => number_format($descuento, 4, '.', ''),
+                    'SumaDeDescuentos'  => number_format($descuento, 4, '.', ''),
                     'DescuentoORecargo' => [
                         'Operacion' => 'DESCUENTO',
                         'Servicio'  => 'ALLOWANCE_GLOBAL',
                         'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
                         'Tasa'      => number_format($descuentotasa, 4, '.', ''),
-                        'Monto'     => number_format($descuento, 4, '.', '')
-                    ]
+                        'Monto'     => number_format($descuento, 4, '.', ''),
+                    ],
                 ];
                 $this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.', '');
 
@@ -576,9 +577,9 @@ class Face
 
                 foreach ($this->descuentos as $key => &$value) {
                     if (is_array($value) && $value['Tasa'] === $tasaParaBusqueda) {
-                        $value['Base'] = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
+                        $value['Base']  = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
                         $value['Monto'] = number_format(((float) $value['Monto']) + $descuento, 4, '.', '');
-                        $tasaFound = true;
+                        $tasaFound      = true;
                     }
                 }
 
@@ -588,7 +589,7 @@ class Face
                         'Servicio'  => 'ALLOWANCE_GLOBAL',
                         'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
                         'Tasa'      => $tasaParaBusqueda,
-                        'Monto'     => number_format($descuento, 4, '.', '')
+                        'Monto'     => number_format($descuento, 4, '.', ''),
                     ];
                 }
             }
@@ -606,18 +607,18 @@ class Face
                     'Tipo'  => 'IVA',
                     'Base'  => number_format($valorConDRMonto, 4, '.', ''),
                     'Tasa'  => $this->empresa['iva'],
-                    'Monto' => number_format($impuestos, 4, '.', '')
-                ]
+                    'Monto' => number_format($impuestos, 4, '.', ''),
+                ],
             ];
             $detalle['Categoria'] = $aBienServicio;
 
-            if (trim($aDescripcionAmpliada) <>'' || trim(substr($aDescripcion, 69))) {
-                $detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . ' ' . $aDescripcionAmpliada), 0, 999));
+            if (trim($aDescripcionAmpliada) != '' || trim(substr($aDescripcion, 69))) {
+                $detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . $aDescripcionAmpliada), 0, 999));
             }
 
-            if ($aExtras<>'') {
+            if ($aExtras != '') {
                 $textos = [];
-                $arr = explode(PHP_EOL, $aExtras);
+                $arr    = explode(PHP_EOL, $aExtras);
                 foreach ($arr as $linea) {
                     $textos[] = $linea;
                 }
@@ -627,11 +628,12 @@ class Face
             $this->detalles[] = $detalle;
         }
     }
+
     private function array_to_xml($student_info, &$xml_student_info)
     {
         foreach ($student_info as $key => $value) {
             if (is_array($value)) {
-                $key = is_numeric($key) ? "item$key" : $key;
+                $key     = is_numeric($key) ? "item$key" : $key;
                 $subnode = $xml_student_info->addChild($key);
                 $this->array_to_xml($value, $subnode);
             } else {
@@ -648,6 +650,7 @@ class Face
         if ($aPadding) {
             $nit = str_pad($nit, 12, '0', STR_PAD_LEFT);
         }
+
         return $nit;
     }
 }
