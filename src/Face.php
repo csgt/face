@@ -26,6 +26,7 @@ class Face
         'nit'               => '',
         'nombre'            => '',
         'direccion'         => '',
+        'moneda'            => 'GTQ', //GTQ, USD
     ];
 
     private $totales = [
@@ -37,7 +38,12 @@ class Face
     ];
 
     private $empresa = [
-        'regimen'                => 'PAGO_TRIMESTRAL', //RET_DEFINITIVA, PAGO_TRIMESTRAL
+        'nombrecomercial'        => '',
+        'direccion'              => '',
+        'codigopostal'           => '',
+        'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
+        'afiliacioniva'          => 'GEN', //FEL: [GEN, PEQ]
+        'retencioniva'           => false,
         'codigoestablecimiento'  => 1,
         'dispositivoelectronico' => '001',
         'moneda'                 => 'GTQ',
@@ -72,7 +78,7 @@ class Face
 
     public function generar()
     {
-        $this->generarDetalles();
+        $fels = ['FACT', 'FCAM', 'FPEQ', 'FCAP', 'FESP', 'NABN', 'RDON', 'RECI', 'NDEB', 'NCRE'];
 
         if ($this->empresa['dispositivoelectronico'] == '') {
             throw new Exception('El dispositivo electrónico es requerido');
@@ -92,9 +98,317 @@ class Face
         if ($this->factura['nit'] == '') {
             throw new Exception('El NIT del comprador es requerido');
         }
-        if (count($this->detalles) == 0) {
-            throw new Exception('Se debe agregar al menos un detalle a la factura');
+
+        if (in_array($this->resolucion['tipo'], $fels)) {
+            if (count($this->items) == 0) {
+                throw new Exception('Se debe agregar al menos un detalle a la factura');
+            }
+            $this->fel();
+        } else {
+            if (count($this->detalles) == 0) {
+                throw new Exception('Se debe agregar al menos un detalle a la factura');
+            }
+            $this->face();
         }
+    }
+
+    public function fel()
+    {
+        if ($this->empresa['nombrecomercial'] == '') {
+            throw new Exception('El nombre comercial del emisor es requerido');
+        }
+
+        if ($this->empresa['direccion'] == '') {
+            throw new Exception('La dirección del emisor es requerido');
+        }
+
+        $factorIVA      = 1 + ($this->empresa['iva'] / 100);
+        $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
+
+        $xw = xmlwriter_open_memory();
+        xmlwriter_set_indent($xw, 1);
+        $res = xmlwriter_set_indent_string($xw, '    ');
+        xmlwriter_start_document($xw, '1.0', 'UTF-8');
+
+        xmlwriter_start_element($xw, 'dte:GTDocumento'); //<GTDocumento>
+
+        xmlwriter_start_attribute($xw, 'xmlns:cfe');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoFacturaEspecial/0.1.0');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'xmlns:cno');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'xmlns:cex');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoExportaciones/0.1.0');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'xmlns:cfc');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'xmlns:dte');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'xmlns:ds');
+        xmlwriter_text($xw, 'http://www.w3.org/2000/09/xmldsig#');
+        xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'xmlns:xsi');
+        // xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
+        // xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'xsi:schemaLocation');
+        // xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+        // xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'Version');
+        xmlwriter_text($xw, '0.4');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:SAT'); //<SAT>
+
+        xmlwriter_start_attribute($xw, 'ClaseDocumento');
+        xmlwriter_text($xw, 'dte');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:DTE'); //<DTE>
+        xmlwriter_start_attribute($xw, 'ID');
+        xmlwriter_text($xw, 'DatosCertificados');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:DatosEmision'); //<DatosEmision>
+        xmlwriter_start_attribute($xw, 'ID');
+        xmlwriter_text($xw, 'DatosEmision');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:DatosGenerales'); //<DatosGenerales>
+        xmlwriter_start_attribute($xw, 'FechaHoraEmision');
+        xmlwriter_text($xw, date_create()->format('Y-m-d\TH:i:s'));
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'NumeroAcceso');
+        xmlwriter_text($xw, 550000000);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'CodigoMoneda');
+        xmlwriter_text($xw, $this->factura['moneda']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'Tipo');
+        xmlwriter_text($xw, $this->resolucion['tipo']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_end_element($xw); //</DatosGenerales>
+
+        xmlwriter_start_element($xw, 'dte:Emisor'); //<Emisor>
+        xmlwriter_start_attribute($xw, 'CorreoEmisor');
+        xmlwriter_text($xw, 'cliente@mail.com'); //TODO
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'CodigoEstablecimiento');
+        xmlwriter_text($xw, $this->empresa['codigoestablecimiento']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'NITEmisor');
+        xmlwriter_text($xw, $this->empresa['nit']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'NombreComercial');
+        xmlwriter_text($xw, $this->empresa['nombrecomercial']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'AfiliacionIVA');
+        xmlwriter_text($xw, $this->empresa['afiliacioniva']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'NombreEmisor');
+        xmlwriter_text($xw, $this->empresa['nombrecomercial']);
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:DireccionEmisor'); //<DireccionEmisor>
+        xmlwriter_start_element($xw, 'dte:Direccion'); //<Direccion />
+        xmlwriter_text($xw, $this->empresa['direccion']);
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'dte:CodigoPostal'); //<CodigoPostal />
+        xmlwriter_text($xw, $this->empresa['codigopostal']);
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'dte:Municipio'); //<Municipio />
+        xmlwriter_text($xw, 'Guatemala');
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'dte:Departamento'); //<Departamento />
+        xmlwriter_text($xw, 'Guatemala');
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'dte:Pais'); //<Pais />
+        xmlwriter_text($xw, 'GT');
+        xmlwriter_end_element($xw);
+        xmlwriter_end_element($xw); //</DireccionEmisor>
+
+        xmlwriter_end_element($xw); //</Emisor>
+
+        xmlwriter_start_element($xw, 'dte:Receptor'); //<Receptor>
+        xmlwriter_start_attribute($xw, 'IDReceptor');
+        xmlwriter_text($xw, $this->fixnit($this->factura['nit']));
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'CorreoReceptor');
+        xmlwriter_text($xw, '');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'NombreReceptor');
+        xmlwriter_text($xw, $this->factura['nombre']);
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:DireccionReceptor'); //<DireccionReceptor>
+        xmlwriter_start_element($xw, 'dte:Direccion'); //<Direccion />
+        xmlwriter_text($xw, $this->factura['direccion']);
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'dte:CodigoPostal'); //CodigoPostal
+        xmlwriter_text($xw, '01001');
+        xmlwriter_end_element($xw); //CodigoPostal
+        xmlwriter_start_element($xw, 'dte:Municipio'); //Municipio
+        xmlwriter_text($xw, 'Guatemala');
+        xmlwriter_end_element($xw); //Municipio
+        xmlwriter_start_element($xw, 'dte:Departamento'); //Departamento
+        xmlwriter_text($xw, 'Guatemala');
+        xmlwriter_end_element($xw); //Departamento
+        xmlwriter_start_element($xw, 'dte:Pais'); //Pais
+        xmlwriter_text($xw, 'GT');
+        xmlwriter_end_element($xw); //Pais
+        xmlwriter_end_element($xw); //DireccionReceptor
+        xmlwriter_end_element($xw); //</Receptor>
+
+        xmlwriter_start_element($xw, 'dte:Frases'); //Frases
+
+        //FRASE ISR
+        xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
+        xmlwriter_start_attribute($xw, 'CodigoEscenario');
+        xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'TipoFrase');
+        xmlwriter_text($xw, '1');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_end_element($xw); //</Frase>
+
+        //FRASE IVA
+        if ($this->empresa['retencioniva']) {
+            xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
+            xmlwriter_start_attribute($xw, 'CodigoEscenario');
+            xmlwriter_text($xw, 1);
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'TipoFrase');
+            xmlwriter_text($xw, '2');
+            xmlwriter_end_attribute($xw);
+            xmlwriter_end_element($xw); //</Frase>
+        }
+
+        xmlwriter_end_element($xw); //Frases
+
+        xmlwriter_start_element($xw, 'dte:Items'); //Items
+        $i          = 1;
+        $gTotal     = 0;
+        $gImpuestos = 0;
+
+        foreach ($this->items as $item) {
+            $monto    = $item['precio'] * $item['cantidad'];
+            $discount = $item['descuento'];
+            $gTotal += $monto;
+
+            if ($item['precio'] > 0 && $globalDiscount > 0) {
+                $diff                  = $monto - $discount;
+                $globalDiscountPortion = 0;
+                if ($globalDiscount >= $diff) {
+                    $globalDiscountPortion = $diff;
+                } else {
+                    $globalDiscountPortion = $globalDiscount;
+                }
+                $globalDiscount -= $globalDiscountPortion;
+                $discount += $globalDiscountPortion;
+            }
+
+            $montoGravable = round(($monto / $factorIVA) - $discount, 2);
+            $impuestos     = $montoGravable * ($this->empresa['iva'] / 100);
+            $gImpuestos += $impuestos;
+
+            xmlwriter_start_element($xw, 'dte:Item'); //Item
+
+            xmlwriter_start_attribute($xw, 'NumeroLinea');
+            xmlwriter_text($xw, $i);
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'BienOServicio');
+            xmlwriter_text($xw, substr($item['tipo'], 0, 1)); //B,S
+            xmlwriter_end_attribute($xw);
+
+            xmlwriter_start_element($xw, 'dte:Cantidad');
+            xmlwriter_text($xw, $item['cantidad']);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:UnidadMedida');
+            xmlwriter_text($xw, $item['unidad']);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:Descripcion');
+            xmlwriter_text($xw, $item['descripcion'] . $item['descripcionAmpliada']);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:PrecioUnitario');
+            xmlwriter_text($xw, $item['precio']);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:Precio');
+            xmlwriter_text($xw, $monto);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:Descuento');
+            xmlwriter_text($xw, $item['descuento']);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:Impuestos'); //<Impuestos>
+
+            xmlwriter_start_element($xw, 'dte:Impuesto'); //<Impuesto>
+
+            xmlwriter_start_element($xw, 'dte:NombreCorto');
+            xmlwriter_text($xw, 'IVA');
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:CodigoUnidadGravable');
+            xmlwriter_text($xw, 1);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:MontoGravable');
+            xmlwriter_text($xw, $montoGravable);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_start_element($xw, 'dte:MontoImpuesto');
+            xmlwriter_text($xw, $impuestos);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_end_element($xw); //</Impuesto>
+            xmlwriter_end_element($xw); //</Impuestos>
+
+            xmlwriter_start_element($xw, 'dte:Total');
+            xmlwriter_text($xw, $monto);
+            xmlwriter_end_element($xw);
+
+            xmlwriter_end_element($xw); //Item
+            $i++;
+        }
+        xmlwriter_end_element($xw); //Items
+
+        xmlwriter_start_element($xw, 'dte:Totales'); //<Totales>
+        xmlwriter_start_element($xw, 'dte:TotalImpuestos'); //<TotalImpuestos>
+
+        xmlwriter_start_element($xw, 'dte:TotalImpuesto'); //<TotalImpuesto>
+        xmlwriter_start_attribute($xw, 'NombreCorto');
+        xmlwriter_text($xw, 'IVA');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'TotalMontoImpuesto');
+        xmlwriter_text($xw, $gImpuestos);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_end_element($xw); //</TotalImpuesto>
+        xmlwriter_end_element($xw); //</TotalImpuestos>
+
+        xmlwriter_start_element($xw, 'dte:GranTotal'); //<GranTotal>
+        xmlwriter_text($xw, $gTotal);
+        xmlwriter_end_element($xw); //</GranTotal>
+        xmlwriter_end_element($xw); //</Totales>
+
+        xmlwriter_end_element($xw); //DatosEmision
+        xmlwriter_end_element($xw); //DTE
+        xmlwriter_end_element($xw); //SAT
+        xmlwriter_end_element($xw); //GTDocumento
+        xmlwriter_end_document($xw);
+
+        $this->sendXML(xmlwriter_output_memory($xw), 'fel');
+        //echo xmlwriter_output_memory($xw);
+    }
+
+    public function face()
+    {
+        $this->generarDetallesFace();
 
         $x = ['Version' => 3];
 
@@ -140,7 +454,7 @@ class Face
                 'Nit'                => $this->factura['nit'],
                 'NombreComercial'    => ($this->factura['nombre'] == '' ? 'CONSUMIDOR FINAL' : $this->factura['nombre']),
                 'DireccionComercial' => [
-                    'Direccion1'   => ($this->factura['direccion'] == '' ? 'CIUDAD' : $this->factura['direccion']),
+                    'Direccion1'   => $this->factura['direccion'],
                     'Direccion2'   => '.',
                     'Municipio'    => 'GUATEMALA',
                     'Departamento' => 'GUATEMALA',
@@ -194,15 +508,29 @@ class Face
             $xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
         }
 
-        return $this->sendXML($xmlText);
+        return $this->sendXML($xmlText, 'face');
     }
 
-    public function sendXML($aXml)
+    public function sendXML($aXml, $tipo = 'face')
     {
         if ($this->empresa['test']) {
-            $url = config('csgtface.testurl');
+            $url = config('csgtface.' . $tipo . '.testurl');
         } else {
-            $url = config('csgtface.url');
+            $url = config('csgtface.' . $tipo . '.url');
+        }
+
+        if ($tipo == 'fel') {
+            $entity      = $this->empresa['nit'];
+            $transaction = 'SYSTEM_REQUEST';
+            $data1       = 'POST_DOCUMENT_SAT';
+            $data2       = base64_encode($aXml);
+            $data3       = $this->factura['referenciainterna'];
+        } else {
+            $entity      = $this->fixnit($this->empresa['nit'], true);
+            $transaction = 'CONVERT_NATIVE_XML';
+            $data1       = $aXml;
+            $data2       = $this->empresa['formatos'];
+            $data3       = '';
         }
 
         $username = $this->empresa['usuario'];
@@ -216,14 +544,14 @@ class Face
         ]);
         $info = $soapClient->__call("RequestTransaction", ["parameters" => [
             'Requestor'   => $this->empresa['requestor'],
-            'Transaction' => 'CONVERT_NATIVE_XML',
+            'Transaction' => $transaction,
             'Country'     => $this->empresa['codigopais'],
-            'Entity'      => $this->fixnit($this->empresa['nit'], true),
+            'Entity'      => $entity,
             'User'        => $this->empresa['requestor'],
             'UserName'    => $username,
-            'Data1'       => $aXml,
-            'Data2'       => $this->empresa['formatos'],
-            'Data3'       => '',
+            'Data1'       => $data1,
+            'Data2'       => $data2,
+            'Data3'       => $data3,
         ]]);
 
         $result = $info->RequestTransactionResult;
@@ -233,32 +561,50 @@ class Face
             Log::error(json_encode($result->Response));
             throw new Exception($result->Response->Description);
         } else {
+            dd($result->Response);
+
             $uuid = $result->Response->Identifier->DocumentGUID;
-            //Log::info(json_encode($result->ResponseData));
-            $xml = $result->ResponseData->ResponseData1;
 
-            $xmlDoc = new DOMDocument();
-            $xmlDoc->loadXML(base64_decode($xml));
+            if ($tipo == 'face') {
+                $id        = '';
+                $serie     = '';
+                $documento = $result->Response->Identifier->Serial;
+                $firma     = '';
+                $nombre    = '';
+                $direccion = '';
+                $xml       = null;
+                $html      = null;
+                $pdf       = null;
+            } else {
+                $xml = $result->ResponseData->ResponseData1;
 
-            $invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2', '*');
-            $invoice = $invoice->item(0);
+                $xmlDoc = new DOMDocument();
+                $xmlDoc->loadXML(base64_decode($xml));
 
-            $id       = $invoice->parentNode->getAttribute('Id');
-            $buyer    = $invoice->getElementsByTagName('buyer');
-            $nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
-            $nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
-            $dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
+                $invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2', '*');
+                $invoice = $invoice->item(0);
 
-            $dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
-            $dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
+                $id       = $invoice->parentNode->getAttribute('Id');
+                $buyer    = $invoice->getElementsByTagName('buyer');
+                $nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
+                $nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
+                $dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
 
-            $cae  = $xmlDoc->getElementsByTagName('CAE');
-            $dcae = $cae[0]->getElementsByTagName('DCAE');
-            $fcae = $cae[0]->getElementsByTagName('FCAE');
+                $dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
+                $dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
 
-            $serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
-            $documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
-            $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
+                $cae  = $xmlDoc->getElementsByTagName('CAE');
+                $dcae = $cae[0]->getElementsByTagName('DCAE');
+                $fcae = $cae[0]->getElementsByTagName('FCAE');
+
+                $serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
+                $documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
+                $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
+
+                $xml  = $result->ResponseData->ResponseData1;
+                $html = $result->ResponseData->ResponseData2;
+                $pdf  = $result->ResponseData->ResponseData3;
+            }
 
             $respuesta['id']        = $id;
             $respuesta['uuid']      = $uuid;
@@ -267,39 +613,9 @@ class Face
             $respuesta['firma']     = $firma;
             $respuesta['nombre']    = $nombre;
             $respuesta['direccion'] = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
-            $respuesta['xml']       = $result->ResponseData->ResponseData1;
-            $respuesta['html']      = $result->ResponseData->ResponseData2;
-            $respuesta['pdf']       = $result->ResponseData->ResponseData3;
-
-            // //Hacer el request de el GUID
-            // $info = $soapClient->__call("RequestTransaction", ["parameters" => [
-            //     'Requestor'   => $this->empresa['requestor'],
-            //     'Transaction' => 'LOOKUP_ISSUED_BATCH_AND_SERIAL',
-            //     'Country'     => $this->empresa['codigopais'],
-            //     'Entity'      => $this->fixnit($this->empresa['nit'], true),
-            //     'User'        => $this->empresa['requestor'],
-            //     'UserName'    => $username,
-            //     'Data1'       => $serie,
-            //     'Data2'       => $documento,
-            //     'Data3'       => ''
-            // ]]);
-
-            // $result  = $info->RequestTransactionResult;
-            // $cuantos = $result->ResponseData->ResponseData1;
-
-            // if ($cuantos > 0) {
-            //     $xml     = $result->ResponseData->ResponseData2;
-            //     $xmlDoc = new DOMDocument();
-            //     $xmlDoc->loadXML(base64_decode($xml));
-
-            //     $docsfound = $xmlDoc->getElementsByTagName('DocsFoundBy');
-            //     $docs = $docsfound[0]->getElementsByTagName('doc');
-            //     $uuids = $docs[0]->getElementsByTagName('uuid');
-
-            //     $respuesta['uuid'] = $uuids[0]->nodeValue;
-            // } else {
-            //     $respuesta['uuid'] = 'no-encontrado';
-            // }
+            $respuesta['xml']       = $xml;
+            $respuesta['html']      = $html;
+            $respuesta['pdf']       = $pdf;
 
             return $respuesta;
         }
@@ -436,7 +752,7 @@ class Face
 
     public function setEmpresa($aParams)
     {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos'];
+        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -456,6 +772,8 @@ class Face
             }
         }
         $this->factura = array_merge($this->factura, $aParams);
+
+        $this->factura['direccion'] = ($this->factura['direccion'] == '' ? 'CIUDAD' : $this->factura['direccion']);
     }
 
     public function setReimpresion($aParams)
@@ -495,7 +813,7 @@ class Face
     }
 
     //Funciones privadas
-    private function generarDetalles()
+    private function generarDetallesFace()
     {
         $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
         foreach ($this->items as $item) {
@@ -553,6 +871,140 @@ class Face
                 'UnidadDeMedida' => $aUnidadMedida,
                 'Cantidad'       => $aCantidad,
                 'ValorSinDR'     => [
+                    'Precio' => number_format($valorSinDRPrecio, 4, '.', ''),
+                    'Monto'  => number_format($valorSinDRMonto, 4, '.', ''),
+                ],
+            ];
+
+            if ($aDescuento > 0) {
+                $detalle['DescuentosYRecargos'] = [
+                    'SumaDeDescuentos'  => number_format($descuento, 4, '.', ''),
+                    'DescuentoORecargo' => [
+                        'Operacion' => 'DESCUENTO',
+                        'Servicio'  => 'ALLOWANCE_GLOBAL',
+                        'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
+                        'Tasa'      => number_format($descuentotasa, 4, '.', ''),
+                        'Monto'     => number_format($descuento, 4, '.', ''),
+                    ],
+                ];
+                $this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.', '');
+
+                $tasaParaBusqueda = number_format($descuentotasa, 4, '.', '');
+
+                $tasaFound = false;
+
+                foreach ($this->descuentos as $key => &$value) {
+                    if (is_array($value) && $value['Tasa'] === $tasaParaBusqueda) {
+                        $value['Base']  = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
+                        $value['Monto'] = number_format(((float) $value['Monto']) + $descuento, 4, '.', '');
+                        $tasaFound      = true;
+                    }
+                }
+
+                if (!$tasaFound) {
+                    $this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
+                        'Operacion' => 'DESCUENTO',
+                        'Servicio'  => 'ALLOWANCE_GLOBAL',
+                        'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
+                        'Tasa'      => $tasaParaBusqueda,
+                        'Monto'     => number_format($descuento, 4, '.', ''),
+                    ];
+                }
+            }
+
+            $detalle['ValorConDR'] = [
+                'Precio' => number_format($valorConDRPrecio, 4, '.', ''),
+                'Monto'  => number_format($valorConDRMonto, 4, '.', ''),
+            ];
+
+            $detalle['Impuestos'] = [
+                'TotalDeImpuestos'      => number_format($impuestos, 4, '.', ''),
+                'IngresosNetosGravados' => number_format($valorConDRMonto, 4, '.', ''),
+                'TotalDeIVA'            => number_format($impuestos, 4, '.', ''),
+                'Impuesto'              => [
+                    'Tipo'  => 'IVA',
+                    'Base'  => number_format($valorConDRMonto, 4, '.', ''),
+                    'Tasa'  => $this->empresa['iva'],
+                    'Monto' => number_format($impuestos, 4, '.', ''),
+                ],
+            ];
+            $detalle['Categoria'] = $aBienServicio;
+
+            if (trim($aDescripcionAmpliada) != '' || trim(substr($aDescripcion, 69))) {
+                $detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . $aDescripcionAmpliada), 0, 999));
+            }
+
+            if ($aExtras != '') {
+                $textos = [];
+                $arr    = explode(PHP_EOL, $aExtras);
+                foreach ($arr as $linea) {
+                    $textos[] = $linea;
+                }
+                $detalle['TextosDePosicion'] = $textos;
+            }
+
+            $this->detalles[] = $detalle;
+        }
+    }
+
+    private function generarDetallesFel()
+    {
+        $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
+        foreach ($this->items as $item) {
+            $aCantidad            = $item['cantidad'];
+            $aPrecioUnitario      = $item['precio'];
+            $aDescripcion         = $item['descripcion'];
+            $aDescripcionAmpliada = $item['descripcionAmpliada'];
+            $aBienServicio        = $item['tipo'];
+            $aDescuento           = $item['descuento'];
+            $aExtras              = $item['extras'];
+            $aUnidadMedida        = $item['unidad'];
+            $aCodigoEAN           = $item['ean'];
+
+            if ($aDescripcion == '') {
+                $aDescripcion = 'Por su compra';
+            }
+
+            $factorIVA = 1 + ($this->empresa['iva'] / 100);
+            $monto     = $aPrecioUnitario * $aCantidad;
+
+            if ($aPrecioUnitario > 0 && $descuentoGlobal > 0) {
+                $resta                  = $monto - $aDescuento;
+                $porcionDescuentoGlobal = 0;
+                if ($descuentoGlobal >= $resta) {
+                    $porcionDescuentoGlobal = $resta;
+                } else {
+                    $porcionDescuentoGlobal = $descuentoGlobal;
+                }
+                $descuentoGlobal -= $porcionDescuentoGlobal;
+                $aDescuento += $porcionDescuentoGlobal;
+            }
+
+            $descuento        = $aDescuento / $factorIVA;
+            $valorSinDRPrecio = $aPrecioUnitario / $factorIVA;
+            $valorSinDRMonto  = $valorSinDRPrecio * $aCantidad;
+            $valorConDRMonto  = ($monto / $factorIVA) - $descuento;
+            $valorConDRPrecio = $valorConDRMonto / $aCantidad;
+            $impuestos        = $valorConDRMonto * ($this->empresa['iva'] / 100);
+
+            if ($aPrecioUnitario > 0) {
+                $descuentotasa = $aDescuento * 100 / $aPrecioUnitario / $aCantidad;
+            } else {
+                $descuentotasa = 0;
+            }
+
+            $this->totales['monto'] += $monto;
+            $this->totales['descuento'] += $descuento;
+            $this->totales['valorSinDRMonto'] += $valorSinDRMonto;
+            $this->totales['valorConDRMonto'] += $valorConDRMonto;
+            $this->totales['impuestos'] += $impuestos;
+
+            $detalle = [
+                'Descripcion'  => trim(substr($aDescripcion, 0, 69)),
+                'CodigoEAN'    => $aCodigoEAN,
+                'UnidadMedida' => $aUnidadMedida,
+                'Cantidad'     => $aCantidad,
+                'ValorSinDR'   => [
                     'Precio' => number_format($valorSinDRPrecio, 4, '.', ''),
                     'Monto'  => number_format($valorSinDRMonto, 4, '.', ''),
                 ],
