@@ -63,13 +63,15 @@ class Face
     ];
 
     private $anulacion = [
-        'serie'       => '',
-        'correlativo' => '',
-        'razon'       => 'Anulación',
+        'serie'        => '',
+        'correlativo'  => '',
+        'razon'        => 'Anulación',
+        'fecha'        => '',
+        'autorizacion' => '',
     ];
 
-    private $items = [];
-    private $detalles;
+    private $items    = [];
+    private $detalles = [];
     // private $descuentos = ['SumaDeDescuentos' => 0];
     private $descuentosNKeys = 1;
     private $descuentos      = [
@@ -78,7 +80,9 @@ class Face
 
     public function generar()
     {
-        $fels = ['FACT', 'FCAM', 'FPEQ', 'FCAP', 'FESP', 'NABN', 'RDON', 'RECI', 'NDEB', 'NCRE'];
+        // $fels  = ['FACT', 'FCAM', 'FPEQ', 'FCAP', 'FESP', 'NABN', 'RDON', 'RECI', 'NDEB', 'NCRE'];
+        $fels  = ['FACT', 'FPEQ', 'NCRE'];
+        $faces = ['FACE63', 'FACE66', 'NCE64'];
 
         if ($this->empresa['dispositivoelectronico'] == '') {
             throw new Exception('El dispositivo electrónico es requerido');
@@ -101,14 +105,13 @@ class Face
 
         if (in_array($this->resolucion['tipo'], $fels)) {
             if (count($this->items) == 0) {
-                throw new Exception('Se debe agregar al menos un detalle a la factura');
+                throw new Exception('Se debe agregar al menos un detalle a la FEL');
             }
             $this->fel();
-        } else {
-            if (count($this->detalles) == 0) {
-                throw new Exception('Se debe agregar al menos un detalle a la factura');
-            }
+        } else if (in_array($this->resolucion['tipo'], $faces)) {
             $this->face();
+        } else {
+            throw new Exception('El tipo de documento no es conocido');
         }
     }
 
@@ -261,31 +264,33 @@ class Face
         xmlwriter_end_element($xw); //DireccionReceptor
         xmlwriter_end_element($xw); //</Receptor>
 
-        xmlwriter_start_element($xw, 'dte:Frases'); //Frases
+        if ($this->resolucion['tipo'] != 'NCRE') {
+            xmlwriter_start_element($xw, 'dte:Frases'); //Frases
 
-        //FRASE ISR
-        xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
-        xmlwriter_start_attribute($xw, 'CodigoEscenario');
-        xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
-        xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'TipoFrase');
-        xmlwriter_text($xw, '1');
-        xmlwriter_end_attribute($xw);
-        xmlwriter_end_element($xw); //</Frase>
-
-        //FRASE IVA
-        if ($this->empresa['retencioniva']) {
+            //FRASE ISR
             xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
             xmlwriter_start_attribute($xw, 'CodigoEscenario');
-            xmlwriter_text($xw, 1);
+            xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'TipoFrase');
-            xmlwriter_text($xw, '2');
+            xmlwriter_text($xw, '1');
             xmlwriter_end_attribute($xw);
             xmlwriter_end_element($xw); //</Frase>
-        }
 
-        xmlwriter_end_element($xw); //Frases
+            //FRASE IVA
+            if ($this->empresa['retencioniva']) {
+                xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
+                xmlwriter_start_attribute($xw, 'CodigoEscenario');
+                xmlwriter_text($xw, 1);
+                xmlwriter_end_attribute($xw);
+                xmlwriter_start_attribute($xw, 'TipoFrase');
+                xmlwriter_text($xw, '2');
+                xmlwriter_end_attribute($xw);
+                xmlwriter_end_element($xw); //</Frase>
+            }
+
+            xmlwriter_end_element($xw); //Frases
+        }
 
         xmlwriter_start_element($xw, 'dte:Items'); //Items
         $i          = 1;
@@ -396,6 +401,64 @@ class Face
         xmlwriter_end_element($xw); //</GranTotal>
         xmlwriter_end_element($xw); //</Totales>
 
+        if ($this->resolucion['tipo'] == 'NCRE') {
+            xmlwriter_start_element($xw, 'dte:Complementos'); //<Complementos>
+            xmlwriter_start_element($xw, 'dte:Complemento'); //<Complemento>
+
+            xmlwriter_start_attribute($xw, 'IDComplemento'); //IDComplemento
+            xmlwriter_text($xw, 'ReferenciasNota');
+            xmlwriter_end_attribute($xw); //IDComplemento
+
+            xmlwriter_start_attribute($xw, 'NombreComplemento'); //NombreComplemento
+            xmlwriter_text($xw, 'ReferenciasNota');
+            xmlwriter_end_attribute($xw); //NombreComplemento
+
+            xmlwriter_start_attribute($xw, 'URIComplemento'); //URIComplemento
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
+            xmlwriter_end_attribute($xw); //URIComplemento
+
+            xmlwriter_start_element($xw, 'ReferenciasNota'); //<ReferenciasNota>
+
+            xmlwriter_start_attribute($xw, 'xmlns:xsi'); //xmlns:xsi
+            xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
+            xmlwriter_end_attribute($xw); //xmlns:xsi
+
+            xmlwriter_start_attribute($xw, 'xmlns:xsd'); //xmlns:xsd
+            xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema');
+            xmlwriter_end_attribute($xw); //xmlns:xsd
+
+            xmlwriter_start_attribute($xw, 'xmlns'); //xmlns
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
+            xmlwriter_end_attribute($xw); //xmlns
+
+            xmlwriter_start_attribute($xw, 'Version'); //Version
+            xmlwriter_text($xw, '1');
+            xmlwriter_end_attribute($xw); //Version
+            xmlwriter_start_attribute($xw, 'NumeroAutorizacionDocumentoOrigen'); //NumeroAutorizacionDocumentoOrigen
+            xmlwriter_text($xw, $this->anulacion['autorizacion']);
+            xmlwriter_end_attribute($xw); //NumeroAutorizacionDocumentoOrigen
+
+            xmlwriter_start_attribute($xw, 'SerieDocumentoOrigen'); //SerieDocumentoOrigen
+            xmlwriter_text($xw, $this->anulacion['serie']);
+            xmlwriter_end_attribute($xw); //SerieDocumentoOrigen
+
+            xmlwriter_start_attribute($xw, 'NumeroDocumentoOrigen'); //NumeroDocumentoOrigen
+            xmlwriter_text($xw, $this->anulacion['correlativo']);
+            xmlwriter_end_attribute($xw); //NumeroDocumentoOrigen
+
+            xmlwriter_start_attribute($xw, 'FechaEmisionDocumentoOrigen'); //FechaEmisionDocumentoOrigen
+            xmlwriter_text($xw, $this->anulacion['fecha']);
+            xmlwriter_end_attribute($xw); //FechaEmisionDocumentoOrigen
+
+            xmlwriter_start_attribute($xw, 'MotivoAjuste'); //MotivoAjuste
+            xmlwriter_text($xw, $this->anulacion['razon']);
+            xmlwriter_end_attribute($xw); //MotivoAjuste
+
+            xmlwriter_end_element($xw); //</ReferenciasNota>
+            xmlwriter_end_element($xw); //</Complemento>
+            xmlwriter_end_element($xw); //</Complementos>
+        }
+
         xmlwriter_end_element($xw); //DatosEmision
         xmlwriter_end_element($xw); //DTE
         xmlwriter_end_element($xw); //SAT
@@ -409,6 +472,10 @@ class Face
     public function face()
     {
         $this->generarDetallesFace();
+
+        if (count($this->detalles) == 0) {
+            throw new Exception('Se debe agregar al menos un detalle a la FACE');
+        }
 
         $x = ['Version' => 3];
 
@@ -669,6 +736,22 @@ class Face
             throw new Exception('El número de correlativo es requerido. Se debe correr el método setAnulacion');
         }
 
+        //Si es FEL
+        if (in_array($this->resolucion['tipo'], $fels)) {
+            if ($this->anulacion['numeroautorizacion'] == '') {
+                throw new Exception('El número de autorización es requerido. Se debe correr el método setAnulacion');
+            }
+
+            if ($this->anulacion['fecha'] == '') {
+                throw new Exception('El fecha del documento a anualr es requerida. Se debe correr el método setAnulacion');
+            }
+
+            $this->fel();
+
+            return;
+        }
+
+        //Si es FACE
         if ($this->empresa['test']) {
             $url = config('csgtface.testurl');
         } else {
@@ -788,7 +871,7 @@ class Face
 
     public function setAnulacion($aParams)
     {
-        $validos = ['serie', 'correlativo', 'razon'];
+        $validos = ['serie', 'correlativo', 'razon', 'autorizacion', 'fecha'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
