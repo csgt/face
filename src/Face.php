@@ -561,25 +561,22 @@ class Face
             Log::error(json_encode($result->Response));
             throw new Exception($result->Response->Description);
         } else {
-            dd($result->Response);
 
-            $uuid = $result->Response->Identifier->DocumentGUID;
+            $uuid   = $result->Response->Identifier->DocumentGUID;
+            $xml    = $result->ResponseData->ResponseData1;
+            $xmlDoc = new DOMDocument();
+            $xmlDoc->loadXML(base64_decode($xml));
 
-            if ($tipo == 'face') {
-                $id        = '';
-                $serie     = '';
+            if ($tipo == 'fel') {
+                $serie     = $result->Response->Identifier->Batch;
                 $documento = $result->Response->Identifier->Serial;
-                $firma     = '';
-                $nombre    = '';
-                $direccion = '';
-                $xml       = null;
+                $firma     = $uuid;
+                $id        = null;
+                $nombre    = null;
+                $direccion = null;
                 $html      = null;
                 $pdf       = null;
             } else {
-                $xml = $result->ResponseData->ResponseData1;
-
-                $xmlDoc = new DOMDocument();
-                $xmlDoc->loadXML(base64_decode($xml));
 
                 $invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2', '*');
                 $invoice = $invoice->item(0);
@@ -601,9 +598,10 @@ class Face
                 $documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
                 $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
 
-                $xml  = $result->ResponseData->ResponseData1;
                 $html = $result->ResponseData->ResponseData2;
                 $pdf  = $result->ResponseData->ResponseData3;
+
+                $direccion = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
             }
 
             $respuesta['id']        = $id;
@@ -612,7 +610,7 @@ class Face
             $respuesta['documento'] = $documento;
             $respuesta['firma']     = $firma;
             $respuesta['nombre']    = $nombre;
-            $respuesta['direccion'] = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
+            $respuesta['direccion'] = $direccion;
             $respuesta['xml']       = $xml;
             $respuesta['html']      = $html;
             $respuesta['pdf']       = $pdf;
@@ -871,140 +869,6 @@ class Face
                 'UnidadDeMedida' => $aUnidadMedida,
                 'Cantidad'       => $aCantidad,
                 'ValorSinDR'     => [
-                    'Precio' => number_format($valorSinDRPrecio, 4, '.', ''),
-                    'Monto'  => number_format($valorSinDRMonto, 4, '.', ''),
-                ],
-            ];
-
-            if ($aDescuento > 0) {
-                $detalle['DescuentosYRecargos'] = [
-                    'SumaDeDescuentos'  => number_format($descuento, 4, '.', ''),
-                    'DescuentoORecargo' => [
-                        'Operacion' => 'DESCUENTO',
-                        'Servicio'  => 'ALLOWANCE_GLOBAL',
-                        'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
-                        'Tasa'      => number_format($descuentotasa, 4, '.', ''),
-                        'Monto'     => number_format($descuento, 4, '.', ''),
-                    ],
-                ];
-                $this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.', '');
-
-                $tasaParaBusqueda = number_format($descuentotasa, 4, '.', '');
-
-                $tasaFound = false;
-
-                foreach ($this->descuentos as $key => &$value) {
-                    if (is_array($value) && $value['Tasa'] === $tasaParaBusqueda) {
-                        $value['Base']  = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
-                        $value['Monto'] = number_format(((float) $value['Monto']) + $descuento, 4, '.', '');
-                        $tasaFound      = true;
-                    }
-                }
-
-                if (!$tasaFound) {
-                    $this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
-                        'Operacion' => 'DESCUENTO',
-                        'Servicio'  => 'ALLOWANCE_GLOBAL',
-                        'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
-                        'Tasa'      => $tasaParaBusqueda,
-                        'Monto'     => number_format($descuento, 4, '.', ''),
-                    ];
-                }
-            }
-
-            $detalle['ValorConDR'] = [
-                'Precio' => number_format($valorConDRPrecio, 4, '.', ''),
-                'Monto'  => number_format($valorConDRMonto, 4, '.', ''),
-            ];
-
-            $detalle['Impuestos'] = [
-                'TotalDeImpuestos'      => number_format($impuestos, 4, '.', ''),
-                'IngresosNetosGravados' => number_format($valorConDRMonto, 4, '.', ''),
-                'TotalDeIVA'            => number_format($impuestos, 4, '.', ''),
-                'Impuesto'              => [
-                    'Tipo'  => 'IVA',
-                    'Base'  => number_format($valorConDRMonto, 4, '.', ''),
-                    'Tasa'  => $this->empresa['iva'],
-                    'Monto' => number_format($impuestos, 4, '.', ''),
-                ],
-            ];
-            $detalle['Categoria'] = $aBienServicio;
-
-            if (trim($aDescripcionAmpliada) != '' || trim(substr($aDescripcion, 69))) {
-                $detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . $aDescripcionAmpliada), 0, 999));
-            }
-
-            if ($aExtras != '') {
-                $textos = [];
-                $arr    = explode(PHP_EOL, $aExtras);
-                foreach ($arr as $linea) {
-                    $textos[] = $linea;
-                }
-                $detalle['TextosDePosicion'] = $textos;
-            }
-
-            $this->detalles[] = $detalle;
-        }
-    }
-
-    private function generarDetallesFel()
-    {
-        $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
-        foreach ($this->items as $item) {
-            $aCantidad            = $item['cantidad'];
-            $aPrecioUnitario      = $item['precio'];
-            $aDescripcion         = $item['descripcion'];
-            $aDescripcionAmpliada = $item['descripcionAmpliada'];
-            $aBienServicio        = $item['tipo'];
-            $aDescuento           = $item['descuento'];
-            $aExtras              = $item['extras'];
-            $aUnidadMedida        = $item['unidad'];
-            $aCodigoEAN           = $item['ean'];
-
-            if ($aDescripcion == '') {
-                $aDescripcion = 'Por su compra';
-            }
-
-            $factorIVA = 1 + ($this->empresa['iva'] / 100);
-            $monto     = $aPrecioUnitario * $aCantidad;
-
-            if ($aPrecioUnitario > 0 && $descuentoGlobal > 0) {
-                $resta                  = $monto - $aDescuento;
-                $porcionDescuentoGlobal = 0;
-                if ($descuentoGlobal >= $resta) {
-                    $porcionDescuentoGlobal = $resta;
-                } else {
-                    $porcionDescuentoGlobal = $descuentoGlobal;
-                }
-                $descuentoGlobal -= $porcionDescuentoGlobal;
-                $aDescuento += $porcionDescuentoGlobal;
-            }
-
-            $descuento        = $aDescuento / $factorIVA;
-            $valorSinDRPrecio = $aPrecioUnitario / $factorIVA;
-            $valorSinDRMonto  = $valorSinDRPrecio * $aCantidad;
-            $valorConDRMonto  = ($monto / $factorIVA) - $descuento;
-            $valorConDRPrecio = $valorConDRMonto / $aCantidad;
-            $impuestos        = $valorConDRMonto * ($this->empresa['iva'] / 100);
-
-            if ($aPrecioUnitario > 0) {
-                $descuentotasa = $aDescuento * 100 / $aPrecioUnitario / $aCantidad;
-            } else {
-                $descuentotasa = 0;
-            }
-
-            $this->totales['monto'] += $monto;
-            $this->totales['descuento'] += $descuento;
-            $this->totales['valorSinDRMonto'] += $valorSinDRMonto;
-            $this->totales['valorConDRMonto'] += $valorConDRMonto;
-            $this->totales['impuestos'] += $impuestos;
-
-            $detalle = [
-                'Descripcion'  => trim(substr($aDescripcion, 0, 69)),
-                'CodigoEAN'    => $aCodigoEAN,
-                'UnidadMedida' => $aUnidadMedida,
-                'Cantidad'     => $aCantidad,
-                'ValorSinDR'   => [
                     'Precio' => number_format($valorSinDRPrecio, 4, '.', ''),
                     'Monto'  => number_format($valorSinDRMonto, 4, '.', ''),
                 ],
