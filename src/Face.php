@@ -562,8 +562,6 @@ class Face
             Log::error(json_encode($result->Response));
             throw new Exception($result->Response->Description);
         } else {
-            dd($result->Response);
-
             $uuid = $result->Response->Identifier->DocumentGUID;
 
             if ($tipo == 'face') {
