@@ -564,7 +564,7 @@ class Face
         } else {
             $uuid = $result->Response->Identifier->DocumentGUID;
 
-            if ($tipo == 'face') {
+            if ($tipo == 'fel') {
                 $id        = '';
                 $serie     = '';
                 $documento = $result->Response->Identifier->Serial;
@@ -592,6 +592,8 @@ class Face
                 $dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
                 $dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
 
+                $direccion = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
+
                 $cae  = $xmlDoc->getElementsByTagName('CAE');
                 $dcae = $cae[0]->getElementsByTagName('DCAE');
                 $fcae = $cae[0]->getElementsByTagName('FCAE');
@@ -611,7 +613,7 @@ class Face
             $respuesta['documento'] = $documento;
             $respuesta['firma']     = $firma;
             $respuesta['nombre']    = $nombre;
-            $respuesta['direccion'] = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
+            $respuesta['direccion'] = $direccion;
             $respuesta['xml']       = $xml;
             $respuesta['html']      = $html;
             $respuesta['pdf']       = $pdf;
