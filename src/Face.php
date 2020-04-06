@@ -105,9 +105,6 @@ class Face
             }
             $this->fel();
         } else {
-            if (count($this->detalles) == 0) {
-                throw new Exception('Se debe agregar al menos un detalle a la factura');
-            }
             $this->face();
         }
     }
@@ -409,6 +406,10 @@ class Face
     public function face()
     {
         $this->generarDetallesFace();
+
+        if (count($this->detalles) == 0) {
+            throw new Exception('Se debe agregar al menos un detalle a la factura');
+        }
 
         $x = ['Version' => 3];
 
