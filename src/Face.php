@@ -10,6 +10,8 @@ use Csgt\Components\Components;
 
 class Face
 {
+    private $tipo = 'face';
+
     private $resolucion = [
         'tipo'                   => 'FACE63',
         'serie'                  => '',
@@ -80,10 +82,6 @@ class Face
 
     public function generar()
     {
-        // $fels  = ['FACT', 'FCAM', 'FPEQ', 'FCAP', 'FESP', 'NABN', 'RDON', 'RECI', 'NDEB', 'NCRE'];
-        $fels  = ['FACT', 'FPEQ', 'NCRE'];
-        $faces = ['FACE63', 'FACE66', 'NCE64'];
-
         if ($this->empresa['dispositivoelectronico'] == '') {
             throw new Exception('El dispositivo electrónico es requerido');
         }
@@ -103,15 +101,16 @@ class Face
             throw new Exception('El NIT del comprador es requerido');
         }
 
-        if (in_array($this->resolucion['tipo'], $fels)) {
-            if (count($this->items) == 0) {
-                throw new Exception('Se debe agregar al menos un detalle a la FEL');
-            }
-            $this->fel();
-        } else if (in_array($this->resolucion['tipo'], $faces)) {
-            $this->face();
-        } else {
-            throw new Exception('El tipo de documento no es conocido');
+        switch ($this->tipo) {
+            case 'fel':
+                $this->fel();
+                break;
+            case 'face':
+                $this->face();
+                break;
+            default:
+                throw new Exception('El tipo de documento no es conocido');
+                break;
         }
     }
 
@@ -580,11 +579,6 @@ class Face
 
     public function sendXML($aXml, $tipo = 'face')
     {
-        if ($this->empresa['test']) {
-            $url = config('csgtface.' . $tipo . '.testurl');
-        } else {
-            $url = config('csgtface.' . $tipo . '.url');
-        }
 
         if ($tipo == 'fel') {
             $entity      = $this->empresa['nit'];
@@ -605,7 +599,7 @@ class Face
             $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
         }
 
-        $soapClient = new SoapClient($url, [
+        $soapClient = new SoapClient($this->getURL(), [
             "trace"      => true,
             "keep_alive" => false,
         ]);
@@ -688,18 +682,12 @@ class Face
 
     public function consultar()
     {
-        if ($this->empresa['test']) {
-            $url = config('csgtface.testurl');
-        } else {
-            $url = config('csgtface.url');
-        }
-
         $username = $this->empresa['usuario'];
         if ($this->resolucion['proveedorface'] == 'gyt') {
             $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
         }
 
-        $soapClient = new SoapClient($url, ["trace" => true, ""]);
+        $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
 
         $info = $soapClient->__call("RequestTransaction", ["parameters" => [
             'Requestor'   => $this->empresa['requestor'],
@@ -737,7 +725,7 @@ class Face
         }
 
         //Si es FEL
-        if (in_array($this->resolucion['tipo'], $fels)) {
+        if ($this->tipo == 'fel') {
             if ($this->anulacion['numeroautorizacion'] == '') {
                 throw new Exception('El número de autorización es requerido. Se debe correr el método setAnulacion');
             }
@@ -752,18 +740,12 @@ class Face
         }
 
         //Si es FACE
-        if ($this->empresa['test']) {
-            $url = config('csgtface.testurl');
-        } else {
-            $url = config('csgtface.url');
-        }
-
         $username = $this->empresa['usuario'];
         if ($this->resolucion['proveedorface'] == 'gyt') {
             $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
         }
 
-        $soapClient = new SoapClient($url, ["trace" => true, ""]);
+        $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
 
         $parameters = [
             'Requestor'   => $this->empresa['requestor'],
@@ -829,6 +811,20 @@ class Face
             }
         }
         $this->resolucion = array_merge($this->resolucion, $aParams);
+
+        $fels  = ['FACT', 'FPEQ', 'NCRE'];
+        $faces = ['FACE63', 'FACE66', 'NCE64'];
+
+        if (in_array($this->resolucion['tipo'], $fels)) {
+            if (count($this->items) == 0) {
+                throw new Exception('Se debe agregar al menos un detalle a la FEL');
+            }
+            $this->tipo = 'fel';
+        } else if (in_array($this->resolucion['tipo'], $faces)) {
+            $this->tipo = 'face';
+        } else {
+            throw new Exception('El tipo de documento no es conocido');
+        }
     }
 
     public function setEmpresa($aParams)
@@ -1052,4 +1048,20 @@ class Face
 
         return $nit;
     }
+
+    private function getURL()
+    {
+        if ($this->empresa['test']) {
+            $url = config('csgtface.' . $this->tipo . '.testurl');
+        } else {
+            $url = config('csgtface.' . $this->tipo . '.url');
+        }
+
+        if ($url == '') {
+            throw new Exception('La dirección del webservice es incorrecta.');
+        }
+
+        return $url;
+    }
+
 }
