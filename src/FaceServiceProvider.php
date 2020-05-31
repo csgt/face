@@ -23,7 +23,7 @@ class FaceServiceProvider extends ServiceProvider
 
     public function register()
     {
-        $this->app['face'] = $this->app->share(function ($app) {
+        $this->app->singleton('face', function ($app) {
             return new Face;
         });
     }
