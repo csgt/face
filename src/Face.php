@@ -82,17 +82,12 @@ class Face
 
     public function generar()
     {
-        if ($this->empresa['dispositivoelectronico'] == '') {
-            throw new Exception('El dispositivo electrónico es requerido');
-        }
+
         if ($this->empresa['requestor'] == '') {
             throw new Exception('El requestor es requerido');
         }
         if ($this->empresa['usuario'] == '') {
             throw new Exception('El usuario es requerido');
-        }
-        if ($this->empresa['codigoestablecimiento'] == '') {
-            throw new Exception('El código de establecimiento es requerido');
         }
         if ($this->empresa['nit'] == '') {
             throw new Exception('El NIT de la empresa emisora es requerido');
@@ -106,6 +101,12 @@ class Face
                 $this->fel();
                 break;
             case 'face':
+                if ($this->empresa['dispositivoelectronico'] == '') {
+                    throw new Exception('El dispositivo electrónico es requerido');
+                }
+                if ($this->empresa['codigoestablecimiento'] == '') {
+                    throw new Exception('El código de establecimiento es requerido');
+                }
                 $this->face();
                 break;
             default:
@@ -816,11 +817,11 @@ class Face
         $faces = ['FACE63', 'FACE66', 'NCE64'];
 
         if (in_array($this->resolucion['tipo'], $fels)) {
-            if (count($this->items) == 0) {
-                throw new Exception('Se debe agregar al menos un detalle a la FEL');
-            }
             $this->tipo = 'fel';
         } else if (in_array($this->resolucion['tipo'], $faces)) {
+            // if (count($this->items) == 0) {
+            //     throw new Exception('Se debe agregar al menos un detalle a la FACE');
+            // }
             $this->tipo = 'face';
         } else {
             throw new Exception('El tipo de documento no es conocido');
