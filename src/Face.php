@@ -98,7 +98,7 @@ class Face
 
         switch ($this->tipo) {
             case 'fel':
-                $this->fel();
+                return $this->fel();
                 break;
             case 'face':
                 if ($this->empresa['dispositivoelectronico'] == '') {
@@ -107,7 +107,8 @@ class Face
                 if ($this->empresa['codigoestablecimiento'] == '') {
                     throw new Exception('El código de establecimiento es requerido');
                 }
-                $this->face();
+
+                return $this->face();
                 break;
             default:
                 throw new Exception('El tipo de documento no es conocido');
@@ -465,7 +466,7 @@ class Face
         xmlwriter_end_element($xw); //GTDocumento
         xmlwriter_end_document($xw);
 
-        $this->sendXML(xmlwriter_output_memory($xw), 'fel');
+        return $this->sendXML(xmlwriter_output_memory($xw), 'fel');
         //echo xmlwriter_output_memory($xw);
     }
 
