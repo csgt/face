@@ -197,7 +197,7 @@ class Face
 
         xmlwriter_start_element($xw, 'dte:Emisor'); //<Emisor>
         xmlwriter_start_attribute($xw, 'CorreoEmisor');
-        xmlwriter_text($xw, 'cliente@mail.com'); //TODO
+        xmlwriter_text($xw, $this->empresa['email']);
         xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'CodigoEstablecimiento');
         xmlwriter_text($xw, $this->empresa['codigoestablecimiento']);
