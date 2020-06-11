@@ -56,6 +56,7 @@ class Face
         'requestor'              => '',
         'usuario'                => '',
         'formatos'               => 'XML',
+        'email'                  => 'email@email.com',
         'test'                   => false,
     ];
 
@@ -831,7 +832,7 @@ class Face
 
     public function setEmpresa($aParams)
     {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal'];
+        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal', 'email'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
