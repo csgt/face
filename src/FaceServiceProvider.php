@@ -12,13 +12,7 @@ class FaceServiceProvider extends ServiceProvider
 
     public function boot(Router $router)
     {
-        $this->mergeConfigFrom(__DIR__ . '/config/csgtface.php', 'csgtface');
-
         AliasLoader::getInstance()->alias('Face', 'Csgt\Face\Face');
-
-        $this->publishes([
-            __DIR__ . '/config/csgtface.php' => config_path('csgtface.php'),
-        ], 'config');
     }
 
     public function register()

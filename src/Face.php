@@ -6,11 +6,38 @@ use Exception;
 use SoapClient;
 use DOMDocument;
 use SimpleXMLElement;
+use GuzzleHttp\Client;
 use Csgt\Components\Components;
 
 class Face
 {
     private $tipo = 'face';
+
+    private $urls = [
+        'face' => [
+            'testurl' => 'http://test.documentagface.com/mx.com.fact.wsfront/FactWSFront.asmx?wsdl',
+            'url'     => 'https://www.documentagface.com/mx.com.fact.wsfront/FactWSFront.asmx?wsdl',
+        ],
+        'fel'  => [
+            'g4s'    => [
+                'testurl' => 'https://pruebasfel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
+                'url'     => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
+            ],
+            'infile' => [
+                'testurl'   => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
+                'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
+                'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
+                'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
+                'pdf'       => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
+            ],
+        ],
+    ];
+
+    private $proveedores = [
+        'g4s',
+        'gyt',
+        'infile',
+    ];
 
     private $resolucion = [
         'tipo'                   => 'FACE63',
@@ -20,7 +47,7 @@ class Face
         'fecharesolucion'        => '',
         'rangoinicialautorizado' => 0,
         'rangofinalautorizado'   => 0,
-        'proveedorface'          => 'g4s', //g4s, gyt
+        'proveedorface'          => 'g4s', //g4s, gyt, infile
     ];
 
     private $factura = [
@@ -55,14 +82,16 @@ class Face
         'footer'                 => '',
         'requestor'              => '',
         'usuario'                => '',
+        'firmaalias'             => '',
+        'firmallave'             => '',
         'formatos'               => 'XML',
         'email'                  => 'email@email.com',
         'test'                   => false,
     ];
 
     private $reimpresion = [
-        'serie'       => '',
-        'correlativo' => '',
+        'uuid'  => '',
+        'fecha' => '',
     ];
 
     private $anulacion = [
@@ -127,6 +156,12 @@ class Face
             throw new Exception('La dirección del emisor es requerido');
         }
 
+        if ($this->resolucion['proveedorface'] == 'infile') {
+            if ($this->empresa['firmallave'] == '') {
+                throw new Exception('La llave para firma es requerida.  Revise su configuracion de empresa.');
+            }
+        }
+
         $factorIVA      = 1 + ($this->empresa['iva'] / 100);
         $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
 
@@ -137,34 +172,43 @@ class Face
 
         xmlwriter_start_element($xw, 'dte:GTDocumento'); //<GTDocumento>
 
-        xmlwriter_start_attribute($xw, 'xmlns:cfe');
-        xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoFacturaEspecial/0.1.0');
-        xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'xmlns:cno');
-        xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
-        xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'xmlns:cex');
-        xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoExportaciones/0.1.0');
-        xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'xmlns:cfc');
-        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
-        xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'xmlns:dte');
-        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
-        xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'xmlns:ds');
         xmlwriter_text($xw, 'http://www.w3.org/2000/09/xmldsig#');
         xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'xmlns:xsi');
-        // xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
-        // xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'xsi:schemaLocation');
-        // xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
-        // xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'Version');
-        xmlwriter_text($xw, '0.4');
+        xmlwriter_start_attribute($xw, 'xmlns:xsi');
+        xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
         xmlwriter_end_attribute($xw);
 
+        //Encabezados version 0.1
+        // xmlwriter_start_attribute($xw, 'xmlns:cfe');
+        // xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoFacturaEspecial/0.1.0');
+        // xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'xmlns:cno');
+        // xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
+        // xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'xmlns:cex');
+        // xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoExportaciones/0.1.0');
+        // xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'xmlns:cfc');
+        // xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
+        // xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'xmlns:dte');
+        // xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+        // xmlwriter_end_attribute($xw);
+        // xmlwriter_start_attribute($xw, 'Version');
+        // xmlwriter_text($xw, '0.4');
+        // xmlwriter_end_attribute($xw);
+        //=================
+
+        //Encabezados Version 0.2
+        xmlwriter_start_attribute($xw, 'xmlns:dte');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.2.0');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'Version');
+        xmlwriter_text($xw, '0.1');
+        xmlwriter_end_attribute($xw);
+        //=================
         xmlwriter_start_element($xw, 'dte:SAT'); //<SAT>
 
         xmlwriter_start_attribute($xw, 'ClaseDocumento');
@@ -602,118 +646,195 @@ class Face
             $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
         }
 
-        $soapClient = new SoapClient($this->getURL(), [
-            "trace"      => true,
-            "keep_alive" => false,
-        ]);
-        $info = $soapClient->__call("RequestTransaction", ["parameters" => [
-            'Requestor'   => $this->empresa['requestor'],
-            'Transaction' => $transaction,
-            'Country'     => $this->empresa['codigopais'],
-            'Entity'      => $entity,
-            'User'        => $this->empresa['requestor'],
-            'UserName'    => $username,
-            'Data1'       => $data1,
-            'Data2'       => $data2,
-            'Data3'       => $data3,
-        ]]);
+        //INFILE - Rest
+        switch ($this->resolucion['proveedorface']) {
+            case 'infile':
+                //Firmar SAT
+                $client = new Client;
+                $body   = [
+                    'llave'        => $this->empresa['firmallave'],
+                    'archivo'      => $data2,
+                    'codigo'       => $this->factura['referenciainterna'],
+                    'alias'        => $this->empresa['firmaalias'],
+                    'es_anulacion' => 'N',
+                ];
+                $response = $client->post($this->urls['fel']['infile']['signature'], [
+                    'json' => $body,
+                ]);
 
-        $result = $info->RequestTransactionResult;
+                $firma = json_decode((string) $response->getBody());
+                if ($firma->resultado == false) {
+                    abort(501, $firma->descripcion);
+                }
 
-        if ($result->Response->Result == false) {
-            Log::error($aXml);
-            Log::error(json_encode($result->Response));
-            throw new Exception($result->Response->Description);
-        } else {
+                Log::info($firma->archivo);
+                //Certificar
+                $client  = new Client;
+                $headers = [
+                    'usuario'       => $username,
+                    'llave'         => $this->empresa['requestor'],
+                    'identificador' => $this->factura['referenciainterna'],
+                    'Content-Type'  => 'application/json',
+                ];
+                $body = [
+                    'nit_emisor' => $this->empresa['nit'],
+                    'xml_dte'    => $firma->archivo,
+                ];
+                $response = $client->post($this->getURL(), [
+                    'headers' => $headers,
+                    'json'    => $body,
+                ]);
 
-            $uuid   = $result->Response->Identifier->DocumentGUID;
-            $xml    = $result->ResponseData->ResponseData1;
-            $xmlDoc = new DOMDocument();
-            $xmlDoc->loadXML(base64_decode($xml));
+                $json = json_decode((string) $response->getBody());
+                if ($json->resultado == false) {
+                    Log::info(json_encode($json));
+                    //abort(501, $json->descripcion);
+                }
 
-            if ($tipo == 'fel') {
-                $serie     = $result->Response->Identifier->Batch;
-                $documento = $result->Response->Identifier->Serial;
+                //abort(501, json_encode($json));
+                $uuid      = $json->uuid;
+                $serie     = $json->serie;
+                $documento = $json->numero;
                 $firma     = $uuid;
+                $xml       = $json->xml_certificado;
                 $id        = null;
                 $nombre    = null;
                 $direccion = null;
                 $html      = null;
                 $pdf       = null;
-            } else {
+                break;
+            default:
+                $soapClient = new SoapClient($this->getURL(), [
+                    "trace"      => true,
+                    "keep_alive" => false,
+                ]);
+                $info = $soapClient->__call("RequestTransaction", ["parameters" => [
+                    'Requestor'   => $this->empresa['requestor'],
+                    'Transaction' => $transaction,
+                    'Country'     => $this->empresa['codigopais'],
+                    'Entity'      => $entity,
+                    'User'        => $this->empresa['requestor'],
+                    'UserName'    => $username,
+                    'Data1'       => $data1,
+                    'Data2'       => $data2,
+                    'Data3'       => $data3,
+                ]]);
 
-                $invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2', '*');
-                $invoice = $invoice->item(0);
+                $result = $info->RequestTransactionResult;
 
-                $id       = $invoice->parentNode->getAttribute('Id');
-                $buyer    = $invoice->getElementsByTagName('buyer');
-                $nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
-                $nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
-                $dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
+                if ($result->Response->Result == false) {
+                    Log::error($aXml);
+                    Log::error(json_encode($result->Response));
+                    throw new Exception($result->Response->Description);
 
-                $dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
-                $dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
+                    return;
+                }
 
-                $cae  = $xmlDoc->getElementsByTagName('CAE');
-                $dcae = $cae[0]->getElementsByTagName('DCAE');
-                $fcae = $cae[0]->getElementsByTagName('FCAE');
+                $uuid   = $result->Response->Identifier->DocumentGUID;
+                $xml    = $result->ResponseData->ResponseData1;
+                $xmlDoc = new DOMDocument();
+                $xmlDoc->loadXML(base64_decode($xml));
 
-                $serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
-                $documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
-                $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
+                if ($tipo == 'fel') {
+                    $serie     = $result->Response->Identifier->Batch;
+                    $documento = $result->Response->Identifier->Serial;
+                    $firma     = $uuid;
+                    $id        = null;
+                    $nombre    = null;
+                    $direccion = null;
+                    $html      = null;
+                    $pdf       = null;
+                } else {
 
-                $html = $result->ResponseData->ResponseData2;
-                $pdf  = $result->ResponseData->ResponseData3;
+                    $invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2', '*');
+                    $invoice = $invoice->item(0);
 
-                $direccion = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
-            }
+                    $id       = $invoice->parentNode->getAttribute('Id');
+                    $buyer    = $invoice->getElementsByTagName('buyer');
+                    $nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
+                    $nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
+                    $dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
 
-            $respuesta['id']        = $id;
-            $respuesta['uuid']      = $uuid;
-            $respuesta['serie']     = $serie;
-            $respuesta['documento'] = $documento;
-            $respuesta['firma']     = $firma;
-            $respuesta['nombre']    = $nombre;
-            $respuesta['direccion'] = $direccion;
-            $respuesta['xml']       = $xml;
-            $respuesta['html']      = $html;
-            $respuesta['pdf']       = $pdf;
+                    $dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
+                    $dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
 
-            return $respuesta;
+                    $cae  = $xmlDoc->getElementsByTagName('CAE');
+                    $dcae = $cae[0]->getElementsByTagName('DCAE');
+                    $fcae = $cae[0]->getElementsByTagName('FCAE');
+
+                    $serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
+                    $documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
+                    $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
+
+                    $html = $result->ResponseData->ResponseData2;
+                    $pdf  = $result->ResponseData->ResponseData3;
+
+                    $direccion = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
+                }
+                break;
         }
+
+        $respuesta['id']        = $id;
+        $respuesta['uuid']      = $uuid;
+        $respuesta['serie']     = $serie;
+        $respuesta['documento'] = $documento;
+        $respuesta['firma']     = $firma;
+        $respuesta['nombre']    = $nombre;
+        $respuesta['direccion'] = $direccion;
+        $respuesta['xml']       = $xml;
+        $respuesta['html']      = $html;
+        $respuesta['pdf']       = $pdf;
+
+        return $respuesta;
     }
 
     public function consultar()
     {
-        $username = $this->empresa['usuario'];
-        if ($this->resolucion['proveedorface'] == 'gyt') {
-            $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
-        }
+        $xml = '';
+        $pdf = '';
 
-        $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
+        switch ($this->resolucion['proveedorface']) {
+            case 'infile':
+                $url      = $this->urls['fel']['infile']['pdf'] . $this->reimpresion['uuid'];
+                $client   = new Client;
+                $response = $client->get($url);
+                $pdf      = base64_encode((string) $response->getBody());
+                break;
+            default:
+                $username = $this->empresa['usuario'];
+                if ($this->resolucion['proveedorface'] == 'gyt') {
+                    $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+                }
 
-        $info = $soapClient->__call("RequestTransaction", ["parameters" => [
-            'Requestor'   => $this->empresa['requestor'],
-            'Transaction' => 'GET_DOCUMENT',
-            'Country'     => $this->empresa['codigopais'],
-            'Entity'      => $this->fixnit($this->empresa['nit'], true),
-            'User'        => $this->empresa['requestor'],
-            'UserName'    => $username,
-            'Data1'       => $this->reimpresion['uuid'],
-            'Data2'       => '',
-            'Data3'       => 'XML PDF',
-        ],
-        ]);
+                $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
 
-        $result = $info->RequestTransactionResult;
+                $info = $soapClient->__call("RequestTransaction", [
+                    "parameters" => [
+                        'Requestor'   => $this->empresa['requestor'],
+                        'Transaction' => 'GET_DOCUMENT',
+                        'Country'     => $this->empresa['codigopais'],
+                        'Entity'      => $this->fixnit($this->empresa['nit'], true),
+                        'User'        => $this->empresa['requestor'],
+                        'UserName'    => $username,
+                        'Data1'       => $this->reimpresion['uuid'],
+                        'Data2'       => '',
+                        'Data3'       => 'XML PDF',
+                    ],
+                ]);
 
-        if ($result->Response->Result == false) {
-            throw new Exception($result->Response->Description);
+                $result = $info->RequestTransactionResult;
+
+                if ($result->Response->Result == false) {
+                    throw new Exception($result->Response->Description);
+                }
+                $xml = base64_decode($result->ResponseData->ResponseData1);
+                $pdf = $result->ResponseData->ResponseData3;
+                break;
         }
 
         return [
-            'xml' => base64_decode($result->ResponseData->ResponseData1),
-            'pdf' => $result->ResponseData->ResponseData3,
+            'xml' => $xml,
+            'pdf' => $pdf,
         ];
     }
 
@@ -806,7 +927,7 @@ class Face
 
     public function setResolucion($aParams)
     {
-        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion', 'fecharesolucion', 'rangoinicialautorizado', 'rangofinalautorizado'];
+        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion', 'fecharesolucion', 'rangoinicialautorizado', 'rangofinalautorizado', 'proveedorface'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -814,6 +935,10 @@ class Face
             }
         }
         $this->resolucion = array_merge($this->resolucion, $aParams);
+
+        if (!in_array($this->resolucion['proveedorface'], $this->proveedores)) {
+            throw new Exception('El proveedor de facturas es incorrecto');
+        }
 
         $fels  = ['FACT', 'FPEQ', 'NCRE'];
         $faces = ['FACE63', 'FACE66', 'NCE64'];
@@ -832,7 +957,7 @@ class Face
 
     public function setEmpresa($aParams)
     {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal', 'email'];
+        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal', 'email', 'firmaalias', 'firmallave'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -858,7 +983,7 @@ class Face
 
     public function setReimpresion($aParams)
     {
-        $validos = ['uuid'];
+        $validos = ['uuid', 'fecha'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -1055,9 +1180,9 @@ class Face
     private function getURL()
     {
         if ($this->empresa['test']) {
-            $url = config('csgtface.' . $this->tipo . '.testurl');
+            $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testurl'];
         } else {
-            $url = config('csgtface.' . $this->tipo . '.url');
+            $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['url'];
         }
 
         if ($url == '') {
