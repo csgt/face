@@ -180,35 +180,37 @@ class Face
         xmlwriter_end_attribute($xw);
 
         //Encabezados version 0.1
-        // xmlwriter_start_attribute($xw, 'xmlns:cfe');
-        // xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoFacturaEspecial/0.1.0');
-        // xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'xmlns:cno');
-        // xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
-        // xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'xmlns:cex');
-        // xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoExportaciones/0.1.0');
-        // xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'xmlns:cfc');
-        // xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
-        // xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'xmlns:dte');
-        // xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
-        // xmlwriter_end_attribute($xw);
-        // xmlwriter_start_attribute($xw, 'Version');
-        // xmlwriter_text($xw, '0.4');
-        // xmlwriter_end_attribute($xw);
-        //=================
+        if ($this->resolucion['proveedorface'] == 'g4s') {
+            xmlwriter_start_attribute($xw, 'xmlns:cfe');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoFacturaEspecial/0.1.0');
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'xmlns:cno');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'xmlns:cex');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoExportaciones/0.1.0');
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'xmlns:cfc');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'xmlns:dte');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+            xmlwriter_end_attribute($xw);
+            xmlwriter_start_attribute($xw, 'Version');
+            xmlwriter_text($xw, '0.4');
+            xmlwriter_end_attribute($xw);
+        } else {
 
-        //Encabezados Version 0.2
-        xmlwriter_start_attribute($xw, 'xmlns:dte');
-        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.2.0');
-        xmlwriter_end_attribute($xw);
+            //Encabezados Version 0.2
 
-        xmlwriter_start_attribute($xw, 'Version');
-        xmlwriter_text($xw, '0.1');
-        xmlwriter_end_attribute($xw);
-        //=================
+            xmlwriter_start_attribute($xw, 'xmlns:dte');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.2.0');
+            xmlwriter_end_attribute($xw);
+
+            xmlwriter_start_attribute($xw, 'Version');
+            xmlwriter_text($xw, '0.1');
+            xmlwriter_end_attribute($xw);
+        }
         xmlwriter_start_element($xw, 'dte:SAT'); //<SAT>
 
         xmlwriter_start_attribute($xw, 'ClaseDocumento');
