@@ -100,6 +100,8 @@ class Face
         'razon'        => 'Anulación',
         'fecha'        => '',
         'autorizacion' => '',
+        'nit'          => '',
+        'uid'          => '',
     ];
 
     private $items    = [];
@@ -144,6 +146,98 @@ class Face
                 throw new Exception('El tipo de documento no es conocido');
                 break;
         }
+    }
+
+    public function felAnular()
+    {
+        if ($this->anulacion['fecha'] == '') {
+            throw new Exception('El fecha del documento a anualar es requerida. Se debe correr el método setAnulacion');
+        }
+
+        if ($this->anulacion['nit'] == '') {
+            throw new Exception('El NIT a anualar es requerido. Se debe correr el método setAnulacion');
+        }
+
+        if ($this->anulacion['uid'] == '') {
+            throw new Exception('El UID del documento a anualar es requerido. Se debe correr el método setAnulacion');
+        }
+
+        $xw = xmlwriter_open_memory();
+        xmlwriter_set_indent($xw, 1);
+        $res = xmlwriter_set_indent_string($xw, '    ');
+        xmlwriter_start_document($xw, '1.0', 'UTF-8');
+
+        xmlwriter_start_element($xw, 'dte:GTAnulacionDocumento'); //<GTAnulacionDocumento>
+
+        xmlwriter_start_attribute($xw, 'xmlns:dte');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'xmlns:ds');
+        xmlwriter_text($xw, 'http://www.w3.org/2000/09/xmldsig#');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'xmlns:xsi');
+        xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'Version');
+        xmlwriter_text($xw, '0.1');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'xsi:schemaLocation');
+        xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0 GT_AnulacionDocumento-0.1.0.xsd');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:SAT'); //<SAT>
+
+        xmlwriter_start_attribute($xw, 'ClaseDocumento');
+        xmlwriter_text($xw, 'dte');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:AnulacionDTE'); //<AnulacionDTE>
+        xmlwriter_start_attribute($xw, 'ID');
+        xmlwriter_text($xw, 'DatosCertificados');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_element($xw, 'dte:DatosGenerales'); //<DatosGenerales>
+
+        xmlwriter_start_attribute($xw, 'FechaEmisionDocumentoAnular');
+        xmlwriter_text($xw, $this->anulacion['fecha']);
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'FechaHoraAnulacion');
+        xmlwriter_text($xw, date_create()->format('Y-m-d\TH:i:s'));
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'ID');
+        xmlwriter_text($xw, 'DatosAnulacion');
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'IDReceptor');
+        xmlwriter_text($xw, $this->anulacion['nit']);
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'MotivoAnulacion');
+        xmlwriter_text($xw, $this->anulacion['motivo']);
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'NITEmisor');
+        xmlwriter_text($xw, $this->empresa['nit']); //TODO revisar
+        xmlwriter_end_attribute($xw);
+
+        xmlwriter_start_attribute($xw, 'NumeroDocumentoAAnular');
+        xmlwriter_text($xw, $this->anulacion['uid']);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_end_element($xw); //</DatosGenerales>
+
+        xmlwriter_end_element($xw); //AnulacionDTE
+        xmlwriter_end_element($xw); //SAT
+        xmlwriter_end_element($xw); //GTAnulacionDocumento
+        xmlwriter_end_document($xw);
+
+        return $this->sendXML(xmlwriter_output_memory($xw), 'fel');
+        //echo xmlwriter_output_memory($xw);
     }
 
     public function fel()
@@ -842,27 +936,17 @@ class Face
 
     public function anular()
     {
+        //Si es FEL
+        if ($this->tipo == 'fel') {
+            return $this->felAnular();
+        }
+
         if ($this->anulacion['serie'] == '') {
             throw new Exception('La serie es requerida. Se debe correr el método setAnulacion');
         }
 
         if ($this->anulacion['correlativo'] == '') {
             throw new Exception('El número de correlativo es requerido. Se debe correr el método setAnulacion');
-        }
-
-        //Si es FEL
-        if ($this->tipo == 'fel') {
-            if ($this->anulacion['numeroautorizacion'] == '') {
-                throw new Exception('El número de autorización es requerido. Se debe correr el método setAnulacion');
-            }
-
-            if ($this->anulacion['fecha'] == '') {
-                throw new Exception('El fecha del documento a anualr es requerida. Se debe correr el método setAnulacion');
-            }
-
-            $this->fel();
-
-            return;
         }
 
         //Si es FACE
@@ -997,7 +1081,7 @@ class Face
 
     public function setAnulacion($aParams)
     {
-        $validos = ['serie', 'correlativo', 'razon', 'autorizacion', 'fecha'];
+        $validos = ['serie', 'correlativo', 'razon', 'autorizacion', 'fecha', 'uid', 'nit'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
