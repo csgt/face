@@ -191,10 +191,6 @@ class Face
 
         xmlwriter_start_element($xw, 'dte:SAT'); //<SAT>
 
-        xmlwriter_start_attribute($xw, 'ClaseDocumento');
-        xmlwriter_text($xw, 'dte');
-        xmlwriter_end_attribute($xw);
-
         xmlwriter_start_element($xw, 'dte:AnulacionDTE'); //<AnulacionDTE>
         xmlwriter_start_attribute($xw, 'ID');
         xmlwriter_text($xw, 'DatosCertificados');
@@ -219,7 +215,7 @@ class Face
         xmlwriter_end_attribute($xw);
 
         xmlwriter_start_attribute($xw, 'MotivoAnulacion');
-        xmlwriter_text($xw, $this->anulacion['motivo']);
+        xmlwriter_text($xw, $this->anulacion['razon']);
         xmlwriter_end_attribute($xw);
 
         xmlwriter_start_attribute($xw, 'NITEmisor');
@@ -236,7 +232,7 @@ class Face
         xmlwriter_end_element($xw); //GTAnulacionDocumento
         xmlwriter_end_document($xw);
 
-        return $this->sendXML(xmlwriter_output_memory($xw), 'fel');
+        return $this->sendXML(xmlwriter_output_memory($xw), 'fel', 'anular');
         //echo xmlwriter_output_memory($xw);
     }
 
@@ -720,13 +716,15 @@ class Face
         return $this->sendXML($xmlText, 'face');
     }
 
-    public function sendXML($aXml, $tipo = 'face')
+    /****************************************/
+    /* $accion = [emitir, anular]
+    /****************************************/
+    public function sendXML($aXml, $tipo = 'face', $accion = 'emitir')
     {
-
         if ($tipo == 'fel') {
             $entity      = $this->empresa['nit'];
             $transaction = 'SYSTEM_REQUEST';
-            $data1       = 'POST_DOCUMENT_SAT';
+            $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
             $data2       = base64_encode($aXml);
             $data3       = $this->factura['referenciainterna'];
         } else {
