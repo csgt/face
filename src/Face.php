@@ -782,7 +782,10 @@ class Face
                 $json = json_decode((string) $response->getBody());
                 if ($json->resultado == false) {
                     Log::info(json_encode($json));
-                    abort(501, $json->descripcion);
+                    $err = collect($json->descripcion_errores)->reduce(function ($carry, $e) {
+                        return $carry . $e->mensaje_error . ' <br> ';
+                    });
+                    abort(501, $err);
                 }
 
                 //abort(501, json_encode($json));
