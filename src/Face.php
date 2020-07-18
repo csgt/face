@@ -28,6 +28,7 @@ class Face
                 'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
                 'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
+                'anulacion' => 'https://certificador.feel.com.gt/fel/anulacion/dte/',
                 'pdf'       => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
             ],
         ],
@@ -374,7 +375,7 @@ class Face
 
         xmlwriter_start_element($xw, 'dte:Receptor'); //<Receptor>
         xmlwriter_start_attribute($xw, 'IDReceptor');
-        xmlwriter_text($xw, $this->fixnit($this->factura['nit']));
+        xmlwriter_text($xw, $this->factura['nit']);
         xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'CorreoReceptor');
         xmlwriter_text($xw, '');
@@ -647,7 +648,7 @@ class Face
                 'DispositivoElectronico'  => $this->empresa['dispositivoelectronico'],
             ],
             'Comprador'  => [
-                'Nit'    => $this->fixnit($this->factura['nit']),
+                'Nit'    => $this->factura['nit'],
                 'Idioma' => 'es',
             ],
         ];
@@ -737,7 +738,7 @@ class Face
 
         $username = $this->empresa['usuario'];
         if ($this->resolucion['proveedorface'] == 'gyt') {
-            $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+            $username = $this->empresa['codigopais'] . '.' . $this->empresa['nit'] . '.' . $this->empresa['usuario'];
         }
 
         //INFILE - Rest
@@ -750,7 +751,7 @@ class Face
                     'archivo'      => $data2,
                     'codigo'       => $this->factura['referenciainterna'],
                     'alias'        => $this->empresa['firmaalias'],
-                    'es_anulacion' => 'N',
+                    'es_anulacion' => ($accion = 'emitir' ? 'N' : 'S'),
                 ];
                 $response = $client->post($this->urls['fel']['infile']['signature'], [
                     'json' => $body,
@@ -774,7 +775,14 @@ class Face
                     'nit_emisor' => $this->empresa['nit'],
                     'xml_dte'    => $firma->archivo,
                 ];
-                $response = $client->post($this->getURL(), [
+
+                if ($accion == 'emitir') {
+                    $url = $this->getURL();
+                } else {
+                    $url = $this->urls['fel']['infile']['anulacion'];
+                }
+
+                $response = $client->post($url, [
                     'headers' => $headers,
                     'json'    => $body,
                 ]);
@@ -900,7 +908,7 @@ class Face
             default:
                 $username = $this->empresa['usuario'];
                 if ($this->resolucion['proveedorface'] == 'gyt') {
-                    $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+                    $username = $this->empresa['codigopais'] . '.' . $this->empresa['nit'] . '.' . $this->empresa['usuario'];
                 }
 
                 $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
@@ -953,7 +961,7 @@ class Face
         //Si es FACE
         $username = $this->empresa['usuario'];
         if ($this->resolucion['proveedorface'] == 'gyt') {
-            $username = $this->empresa['codigopais'] . '.' . $this->fixnit($this->empresa['nit']) . '.' . $this->empresa['usuario'];
+            $username = $this->empresa['codigopais'] . '.' . $this->empresa['nit'] . '.' . $this->empresa['usuario'];
         }
 
         $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
@@ -1051,7 +1059,8 @@ class Face
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->empresa = array_merge($this->empresa, $aParams);
+        $this->empresa        = array_merge($this->empresa, $aParams);
+        $this->empresa['nit'] = $this->fixnit($this->empresa['nit']);
     }
 
     public function setFactura($aParams)
@@ -1066,6 +1075,7 @@ class Face
         $this->factura = array_merge($this->factura, $aParams);
 
         $this->factura['direccion'] = ($this->factura['direccion'] == '' ? 'CIUDAD' : $this->factura['direccion']);
+        $this->factura['nit']       = $this->fixnit($this->factura['nit']);
     }
 
     public function setReimpresion($aParams)
@@ -1089,7 +1099,8 @@ class Face
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->anulacion = array_merge($this->anulacion, $aParams);
+        $this->anulacion        = array_merge($this->anulacion, $aParams);
+        $this->anulacion['nit'] = $this->fixnit($this->anulacion['nit']);
     }
 
     public function setFormatos($aParams)
