@@ -751,7 +751,7 @@ class Face
                     'archivo'      => $data2,
                     'codigo'       => $this->factura['referenciainterna'],
                     'alias'        => $this->empresa['firmaalias'],
-                    'es_anulacion' => ($accion = 'emitir' ? 'N' : 'S'),
+                    'es_anulacion' => ($accion == 'emitir' ? 'N' : 'S'),
                 ];
                 $response = $client->post($this->urls['fel']['infile']['signature'], [
                     'json' => $body,
