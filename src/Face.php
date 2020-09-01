@@ -285,10 +285,10 @@ class Face
             xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'xmlns:dte');
-            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.2.0');
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'Version');
-            xmlwriter_text($xw, '0.4');
+            xmlwriter_text($xw, '0.1');
             xmlwriter_end_attribute($xw);
         } else {
 
@@ -556,7 +556,7 @@ class Face
             xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
             xmlwriter_end_attribute($xw); //URIComplemento
 
-            xmlwriter_start_element($xw, 'ReferenciasNota'); //<ReferenciasNota>
+            xmlwriter_start_element($xw, 'cno:ReferenciasNota'); //<cno:ReferenciasNota>
 
             xmlwriter_start_attribute($xw, 'xmlns:xsi'); //xmlns:xsi
             xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
@@ -566,7 +566,7 @@ class Face
             xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema');
             xmlwriter_end_attribute($xw); //xmlns:xsd
 
-            xmlwriter_start_attribute($xw, 'xmlns'); //xmlns
+            xmlwriter_start_attribute($xw, 'xmlns:cno'); //xmlns
             xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
             xmlwriter_end_attribute($xw); //xmlns
 
@@ -593,7 +593,7 @@ class Face
             xmlwriter_text($xw, $this->anulacion['razon']);
             xmlwriter_end_attribute($xw); //MotivoAjuste
 
-            xmlwriter_end_element($xw); //</ReferenciasNota>
+            xmlwriter_end_element($xw); //</cno:ReferenciasNota>
             xmlwriter_end_element($xw); //</Complemento>
             xmlwriter_end_element($xw); //</Complementos>
         }
