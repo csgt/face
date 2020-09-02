@@ -284,10 +284,10 @@ class Face
             xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/CompCambiaria/0.1.0');
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'xmlns:dte');
-            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.1.0');
+            xmlwriter_text($xw, 'http://www.sat.gob.gt/dte/fel/0.2.0');
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'Version');
-            xmlwriter_text($xw, '0.4');
+            xmlwriter_text($xw, '0.1');
             xmlwriter_end_attribute($xw);
         } else {
 
@@ -555,7 +555,7 @@ class Face
             xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoReferenciaNota/0.1.0');
             xmlwriter_end_attribute($xw); //URIComplemento
 
-            xmlwriter_start_element($xw, 'ReferenciasNota'); //<ReferenciasNota>
+            xmlwriter_start_element($xw, 'cno:ReferenciasNota'); //<ReferenciasNota>
 
             xmlwriter_start_attribute($xw, 'xmlns:xsi'); //xmlns:xsi
             xmlwriter_text($xw, 'http://www.w3.org/2001/XMLSchema-instance');
