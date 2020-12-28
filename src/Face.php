@@ -439,7 +439,6 @@ class Face
         foreach ($this->items as $item) {
             $monto    = $item['precio'] * $item['cantidad'];
             $discount = $item['descuento'];
-            $gTotal += $monto;
 
             if ($item['precio'] > 0 && $globalDiscount > 0) {
                 $diff                  = $monto - $discount;
@@ -452,8 +451,9 @@ class Face
                 $globalDiscount -= $globalDiscountPortion;
                 $discount += $globalDiscountPortion;
             }
+            $gTotal += $monto - $discount;
 
-            $montoGravable = round(($monto / $factorIVA) - $discount, 2);
+            $montoGravable = round((($monto - $discount) / $factorIVA), 2);
             $impuestos     = $montoGravable * ($this->empresa['iva'] / 100);
             $gImpuestos += $impuestos;
 
@@ -487,7 +487,7 @@ class Face
             xmlwriter_end_element($xw);
 
             xmlwriter_start_element($xw, 'dte:Descuento');
-            xmlwriter_text($xw, $item['descuento']);
+            xmlwriter_text($xw, $discount);
             xmlwriter_end_element($xw);
 
             xmlwriter_start_element($xw, 'dte:Impuestos'); //<Impuestos>
@@ -514,7 +514,7 @@ class Face
             xmlwriter_end_element($xw); //</Impuestos>
 
             xmlwriter_start_element($xw, 'dte:Total');
-            xmlwriter_text($xw, $monto);
+            xmlwriter_text($xw, $monto - $discount);
             xmlwriter_end_element($xw);
 
             xmlwriter_end_element($xw); //Item
