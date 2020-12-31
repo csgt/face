@@ -5,20 +5,14 @@ use Log;
 use Exception;
 use SoapClient;
 use DOMDocument;
-use SimpleXMLElement;
 use GuzzleHttp\Client;
-use Csgt\Components\Components;
 
 class Face
 {
-    private $tipo = 'face';
+    private $tipo = 'fel';
 
     private $urls = [
-        'face' => [
-            'testurl' => 'http://test.documentagface.com/mx.com.fact.wsfront/FactWSFront.asmx?wsdl',
-            'url'     => 'https://www.documentagface.com/mx.com.fact.wsfront/FactWSFront.asmx?wsdl',
-        ],
-        'fel'  => [
+        'fel' => [
             'g4s'    => [
                 'testurl' => 'https://pruebasfel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
                 'url'     => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
@@ -36,7 +30,6 @@ class Face
 
     private $proveedores = [
         'g4s',
-        'gyt',
         'infile',
     ];
 
@@ -48,7 +41,7 @@ class Face
         'fecharesolucion'        => '',
         'rangoinicialautorizado' => 0,
         'rangofinalautorizado'   => 0,
-        'proveedorface'          => 'g4s', //g4s, gyt, infile
+        'proveedorface'          => 'g4s', //g4s, infile
     ];
 
     private $factura = [
@@ -105,9 +98,8 @@ class Face
         'uid'          => '',
     ];
 
-    private $items    = [];
-    private $detalles = [];
-    // private $descuentos = ['SumaDeDescuentos' => 0];
+    private $items           = [];
+    private $detalles        = [];
     private $descuentosNKeys = 1;
     private $descuentos      = [
         'SumaDeDescuentos' => 0,
@@ -115,7 +107,6 @@ class Face
 
     public function generar()
     {
-
         if ($this->empresa['requestor'] == '') {
             throw new Exception('El requestor es requerido');
         }
@@ -132,16 +123,6 @@ class Face
         switch ($this->tipo) {
             case 'fel':
                 return $this->fel();
-                break;
-            case 'face':
-                if ($this->empresa['dispositivoelectronico'] == '') {
-                    throw new Exception('El dispositivo electrónico es requerido');
-                }
-                if ($this->empresa['codigoestablecimiento'] == '') {
-                    throw new Exception('El código de establecimiento es requerido');
-                }
-
-                return $this->face();
                 break;
             default:
                 throw new Exception('El tipo de documento no es conocido');
@@ -571,7 +552,7 @@ class Face
             xmlwriter_end_attribute($xw); //xmlns
 
             xmlwriter_start_attribute($xw, 'Version'); //Version
-            xmlwriter_text($xw, '1');
+            xmlwriter_text($xw, '0');
             xmlwriter_end_attribute($xw); //Version
             xmlwriter_start_attribute($xw, 'NumeroAutorizacionDocumentoOrigen'); //NumeroAutorizacionDocumentoOrigen
             xmlwriter_text($xw, $this->anulacion['autorizacion']);
@@ -593,6 +574,10 @@ class Face
             xmlwriter_text($xw, $this->anulacion['razon']);
             xmlwriter_end_attribute($xw); //MotivoAjuste
 
+            xmlwriter_start_attribute($xw, 'RegimenAntiguo'); //RegimenAntiguo
+            xmlwriter_text($xw, 'Antiguo');
+            xmlwriter_end_attribute($xw); //RegimenAntiguo
+
             xmlwriter_end_element($xw); //</cno:ReferenciasNota>
             xmlwriter_end_element($xw); //</Complemento>
             xmlwriter_end_element($xw); //</Complementos>
@@ -608,119 +593,10 @@ class Face
         //echo xmlwriter_output_memory($xw);
     }
 
-    public function face()
-    {
-        $this->generarDetallesFace();
-
-        if (count($this->detalles) == 0) {
-            throw new Exception('Se debe agregar al menos un detalle a la FACE');
-        }
-
-        $x = ['Version' => 3];
-
-        if ($this->resolucion['correlativo'] !== 0) {
-            $arr = [
-                'AsignacionSolicitada' => [
-                    'Serie'                  => $this->resolucion['serie'],
-                    'NumeroDocumento'        => $this->resolucion['correlativo'],
-                    'FechaEmision'           => date_create()->format('Y-m-d\TH:i:s'),
-                    'NumeroAutorizacion'     => $this->resolucion['numeroautorizacion'],
-                    'FechaResolucion'        => $this->resolucion['fecharesolucion'],
-                    'RangoInicialAutorizado' => $this->resolucion['rangoinicialautorizado'],
-                    'RangoFinalAutorizado'   => $this->resolucion['rangofinalautorizado'],
-                ],
-            ];
-            $x = array_merge($x, $arr);
-        }
-
-        $arr = [
-            'Encabezado' => [
-                'TipoActivo'              => $this->resolucion['tipo'],
-                'CodigoDeMoneda'          => $this->empresa['moneda'],
-                'TipoDeCambio'            => 1,
-                'InformacionDeRegimenIsr' => $this->empresa['regimen'],
-                'ReferenciaInterna'       => $this->factura['referenciainterna'],
-            ],
-            'Vendedor'   => [
-                'Nit'                     => $this->fixnit($this->empresa['nit'], true),
-                'Idioma'                  => 'es',
-                'CodigoDeEstablecimiento' => $this->empresa['codigoestablecimiento'],
-                'DispositivoElectronico'  => $this->empresa['dispositivoelectronico'],
-            ],
-            'Comprador'  => [
-                'Nit'    => $this->factura['nit'],
-                'Idioma' => 'es',
-            ],
-        ];
-
-        $x = array_merge($x, $arr);
-
-        if ($this->factura['nit'] == 'CF') {
-            $x['Comprador'] = [
-                'Nit'                => $this->factura['nit'],
-                'NombreComercial'    => ($this->factura['nombre'] == '' ? 'CONSUMIDOR FINAL' : $this->factura['nombre']),
-                'DireccionComercial' => [
-                    'Direccion1'   => $this->factura['direccion'],
-                    'Direccion2'   => '.',
-                    'Municipio'    => 'GUATEMALA',
-                    'Departamento' => 'GUATEMALA',
-                    'CodigoDePais' => 'GT',
-                ],
-                'Idioma'             => 'es',
-            ];
-        }
-        $x['Detalles'] = $this->detalles;
-
-        $x['Totales'] = [
-            'SubTotalSinDR' => number_format($this->totales['valorSinDRMonto'], 4, '.', ''),
-        ];
-
-        if (count($this->descuentos) > $this->descuentosNKeys) {
-            $x['Totales']['DescuentosYRecargos'] = $this->descuentos;
-        }
-
-        $arr = [
-            'SubTotalConDR' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-            'Impuestos'     => [
-                'TotalDeImpuestos'      => number_format($this->totales['impuestos'], 4, '.', ''),
-                'IngresosNetosGravados' => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-                'TotalDeIVA'            => number_format($this->totales['impuestos'], 4, '.', ''),
-                'Impuesto'              => [
-                    'Tipo'  => 'IVA',
-                    'Base'  => number_format($this->totales['valorConDRMonto'], 4, '.', ''),
-                    'Tasa'  => $this->empresa['iva'],
-                    'Monto' => number_format($this->totales['impuestos'], 4, '.', ''),
-                ],
-            ],
-            'Total'         => number_format($this->totales['valorConDRMonto'] + $this->totales['impuestos'], 2, '.', ''),
-            'TotalLetras'   => Components::numeroALetras($this->totales['valorConDRMonto'] + $this->totales['impuestos'], $this->empresa['moneda'], 2, false),
-        ];
-
-        $x['Totales'] = array_merge($x['Totales'], $arr);
-
-        if ($this->empresa['footer'] != '') {
-            $x['TextosDePie'] = [
-                'Texto' => substr($this->empresa['footer'], 0, 1000),
-            ];
-        }
-
-        $xml = new SimpleXMLElement("<FactDocGT xmlns:xsi=\"http://www.w3.org/2001/XMLSchema-instance\" xmlns=\"http://www.fact.com.mx/schema/gt\" xsi:schemaLocation=\"http://www.fact.com.mx/schema/gt http://www.mysuitemex.com/fact/schema/fx_2013_gt_3.xsd\"></FactDocGT>");
-        $this->array_to_xml($x, $xml);
-
-        $xmlText = utf8_encode($xml->asXML());
-
-        for ($i = count($this->detalles) - 1; $i >= 0; $i--) {
-            $xmlText = strtr($xmlText, ['item' . $i => 'Detalle']);
-            $xmlText = strtr($xmlText, ['desc_' . $i => 'DescuentoORecargo']);
-        }
-
-        return $this->sendXML($xmlText, 'face');
-    }
-
     /****************************************/
     /* $accion = [emitir, anular]
     /****************************************/
-    public function sendXML($aXml, $tipo = 'face', $accion = 'emitir')
+    public function sendXML($aXml, $tipo = 'fel', $accion = 'emitir')
     {
         if ($tipo == 'fel') {
             $entity      = $this->empresa['nit'];
@@ -728,18 +604,9 @@ class Face
             $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
             $data2       = base64_encode($aXml);
             $data3       = $this->factura['referenciainterna'];
-        } else {
-            $entity      = $this->fixnit($this->empresa['nit'], true);
-            $transaction = 'CONVERT_NATIVE_XML';
-            $data1       = $aXml;
-            $data2       = $this->empresa['formatos'];
-            $data3       = '';
         }
 
         $username = $this->empresa['usuario'];
-        if ($this->resolucion['proveedorface'] == 'gyt') {
-            $username = $this->empresa['codigopais'] . '.' . $this->empresa['nit'] . '.' . $this->empresa['usuario'];
-        }
 
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
@@ -849,32 +716,6 @@ class Face
                     $direccion = null;
                     $html      = null;
                     $pdf       = null;
-                } else {
-
-                    $invoice = $xmlDoc->getElementsByTagNameNS('urn:ean.ucc:pay:2', '*');
-                    $invoice = $invoice->item(0);
-
-                    $id       = $invoice->parentNode->getAttribute('Id');
-                    $buyer    = $invoice->getElementsByTagName('buyer');
-                    $nameaddr = $buyer[0]->getElementsByTagName('nameAndAddress');
-                    $nombre   = $nameaddr[0]->getElementsByTagName('name')[0]->nodeValue;
-                    $dir1     = $nameaddr[0]->getElementsByTagName('streetAddressOne')[0]->nodeValue;
-
-                    $dir2Node = $nameaddr[0]->getElementsByTagName('streetAddressTwo');
-                    $dir2     = $dir2Node->length > 0 ? $dir2Node[0]->nodeValue : null;
-
-                    $cae  = $xmlDoc->getElementsByTagName('CAE');
-                    $dcae = $cae[0]->getElementsByTagName('DCAE');
-                    $fcae = $cae[0]->getElementsByTagName('FCAE');
-
-                    $serie     = $dcae[0]->getElementsByTagName('Serie')[0]->nodeValue;
-                    $documento = $dcae[0]->getElementsByTagName('NumeroDocumento')[0]->nodeValue;
-                    $firma     = $fcae[0]->getElementsByTagName('SignatureValue')[0]->nodeValue;
-
-                    $html = $result->ResponseData->ResponseData2;
-                    $pdf  = $result->ResponseData->ResponseData3;
-
-                    $direccion = trim($dir1 . ($dir2 ? ' ' . $dir2 : ''));
                 }
                 break;
         }
@@ -906,11 +747,7 @@ class Face
                 $pdf      = base64_encode((string) $response->getBody());
                 break;
             default:
-                $username = $this->empresa['usuario'];
-                if ($this->resolucion['proveedorface'] == 'gyt') {
-                    $username = $this->empresa['codigopais'] . '.' . $this->empresa['nit'] . '.' . $this->empresa['usuario'];
-                }
-
+                $username   = $this->empresa['usuario'];
                 $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
 
                 $info = $soapClient->__call("RequestTransaction", [
@@ -949,47 +786,6 @@ class Face
         if ($this->tipo == 'fel') {
             return $this->felAnular();
         }
-
-        if ($this->anulacion['serie'] == '') {
-            throw new Exception('La serie es requerida. Se debe correr el método setAnulacion');
-        }
-
-        if ($this->anulacion['correlativo'] == '') {
-            throw new Exception('El número de correlativo es requerido. Se debe correr el método setAnulacion');
-        }
-
-        //Si es FACE
-        $username = $this->empresa['usuario'];
-        if ($this->resolucion['proveedorface'] == 'gyt') {
-            $username = $this->empresa['codigopais'] . '.' . $this->empresa['nit'] . '.' . $this->empresa['usuario'];
-        }
-
-        $soapClient = new SoapClient($this->getURL(), ["trace" => true, ""]);
-
-        $parameters = [
-            'Requestor'   => $this->empresa['requestor'],
-            'Transaction' => 'CANCEL_XML',
-            'Country'     => $this->empresa['codigopais'],
-            'Entity'      => $this->fixnit($this->empresa['nit'], true),
-            'User'        => $this->empresa['requestor'],
-            'UserName'    => $username,
-            'Data1'       => $this->anulacion['serie'],
-            'Data2'       => $this->anulacion['correlativo'],
-            'Data3'       => 'XML',
-        ];
-        Log::info($parameters);
-
-        $info = $soapClient->__call("RequestTransaction", ["parameters" => $parameters]);
-
-        $result = $info->RequestTransactionResult;
-
-        if ($result->Response->Result == false) {
-            throw new Exception($result->Response->Data);
-        }
-
-        return [
-            'xml' => base64_decode($result->ResponseData->ResponseData1),
-        ];
     }
 
     public function pdf()
@@ -1035,16 +831,10 @@ class Face
             throw new Exception('El proveedor de facturas es incorrecto');
         }
 
-        $fels  = ['FACT', 'FPEQ', 'NCRE'];
-        $faces = ['FACE63', 'FACE66', 'NCE64'];
+        $fels = ['FACT', 'FPEQ', 'NCRE'];
 
         if (in_array($this->resolucion['tipo'], $fels)) {
             $this->tipo = 'fel';
-        } else if (in_array($this->resolucion['tipo'], $faces)) {
-            // if (count($this->items) == 0) {
-            //     throw new Exception('Se debe agregar al menos un detalle a la FACE');
-            // }
-            $this->tipo = 'face';
         } else {
             throw new Exception('El tipo de documento no es conocido');
         }
@@ -1267,7 +1057,7 @@ class Face
     private function fixnit($aNit, $aPadding = false)
     {
         $nit = trim(str_replace('-', '', $aNit));
-        //Solo GyT espera los nits con 12 ceros
+        //Si espera los nits con 12 ceros
         if ($aPadding) {
             $nit = str_pad($nit, 12, '0', STR_PAD_LEFT);
         }
