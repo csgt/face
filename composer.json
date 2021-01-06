@@ -9,16 +9,15 @@
     ],
     "require": {
         "php": ">=7.0.0",
-        "csgt/components": "5.5.*-dev"
+        "econea/nusoap": "^0.9.10"
     },
     "autoload": {
-        "classmap": [
-        ],
+        "classmap": [],
         "psr-4": {
             "Csgt\\Face\\": "src/"
         }
     },
-    "minimum-stability" : "stable",
+    "minimum-stability": "stable",
     "extra": {
         "laravel": {
             "providers": [
