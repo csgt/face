@@ -700,7 +700,7 @@ class Face
                 Log::info(json_encode($soapClient->request));
                 Log::info(json_encode($result['Response']));
 
-                if ($result['Response']['Result'] == false) {
+                if ($result['Response']['Result'] == "false") {
                     throw new Exception($result['Response']['Description']);
 
                     return;
@@ -771,7 +771,7 @@ class Face
 
                 $result = $info["RequestTransactionResult"];
 
-                if ($result["Response"]["Result"] == false) {
+                if ($result["Response"]["Result"] == "false") {
                     throw new Exception($result["Response"]["Description"]);
                 }
                 $xml = base64_decode($result["ResponseData"]["ResponseData1"]);
