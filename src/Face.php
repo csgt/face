@@ -695,9 +695,10 @@ class Face
 
                 $result = $info['RequestTransactionResult'];
 
-                Log::error($params);
-                Log::error($aXml);
-                Log::error(json_encode($result['Response']));
+                Log::info($params);
+                Log::info($aXml);
+                Log::info(json_encode($soapClient->request));
+                Log::info(json_encode($result['Response']));
 
                 if ($result['Response']['Result'] == false) {
                     throw new Exception($result['Response']['Description']);
@@ -766,7 +767,7 @@ class Face
                     'Data3'       => 'XML PDF',
                 ]);
 
-                Log::info($soapClient->request);
+                Log::info(json_encode($soapClient->request));
 
                 $result = $info["RequestTransactionResult"];
 
