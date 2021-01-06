@@ -676,7 +676,8 @@ class Face
                 $pdf       = null;
                 break;
             default:
-                $soapClient = new nusoap_client($this->getURL(), 'wsdl');
+                $soapClient                   = new nusoap_client($this->getURL(), 'wsdl');
+                $soapClient->soap_defencoding = 'UTF-8';
 
                 $params = [
                     'Requestor'   => $this->empresa['requestor'],
@@ -749,8 +750,9 @@ class Face
                 $pdf      = base64_encode((string) $response->getBody());
                 break;
             default:
-                $username   = $this->empresa['usuario'];
-                $soapClient = new nusoap_client($this->getURL(), "wsdl");
+                $username                     = $this->empresa['usuario'];
+                $soapClient                   = new nusoap_client($this->getURL(), "wsdl");
+                $soapClient->soap_defencoding = 'UTF-8';
 
                 $info = $soapClient->call("RequestTransaction", [
                     'Requestor'   => $this->empresa['requestor'],
