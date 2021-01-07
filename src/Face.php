@@ -303,9 +303,6 @@ class Face
         xmlwriter_start_attribute($xw, 'FechaHoraEmision');
         xmlwriter_text($xw, date_create()->format('Y-m-d\TH:i:s'));
         xmlwriter_end_attribute($xw);
-        xmlwriter_start_attribute($xw, 'NumeroAcceso');
-        xmlwriter_text($xw, 550000000);
-        xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'CodigoMoneda');
         xmlwriter_text($xw, $this->factura['moneda']);
         xmlwriter_end_attribute($xw);
@@ -554,9 +551,6 @@ class Face
             xmlwriter_start_attribute($xw, 'Version'); //Version
             xmlwriter_text($xw, '0');
             xmlwriter_end_attribute($xw); //Version
-            xmlwriter_start_attribute($xw, 'NumeroAutorizacionDocumentoOrigen'); //NumeroAutorizacionDocumentoOrigen
-            xmlwriter_text($xw, $this->anulacion['autorizacion']);
-            xmlwriter_end_attribute($xw); //NumeroAutorizacionDocumentoOrigen
 
             xmlwriter_start_attribute($xw, 'SerieDocumentoOrigen'); //SerieDocumentoOrigen
             xmlwriter_text($xw, $this->anulacion['serie']);
@@ -574,9 +568,19 @@ class Face
             xmlwriter_text($xw, $this->anulacion['razon']);
             xmlwriter_end_attribute($xw); //MotivoAjuste
 
-            xmlwriter_start_attribute($xw, 'RegimenAntiguo'); //RegimenAntiguo
-            xmlwriter_text($xw, 'Antiguo');
-            xmlwriter_end_attribute($xw); //RegimenAntiguo
+            if ($this->anulacion['uid']) {
+                xmlwriter_start_attribute($xw, 'NumeroAutorizacionDocumentoOrigen'); //NumeroAutorizacionDocumentoOrigen
+                xmlwriter_text($xw, $this->anulacion['uid']);
+                xmlwriter_end_attribute($xw); //NumeroAutorizacionDocumentoOrigen
+            } else {
+                xmlwriter_start_attribute($xw, 'NumeroAutorizacionDocumentoOrigen'); //NumeroAutorizacionDocumentoOrigen
+                xmlwriter_text($xw, $this->anulacion['autorizacion']);
+                xmlwriter_end_attribute($xw); //NumeroAutorizacionDocumentoOrigen
+
+                xmlwriter_start_attribute($xw, 'RegimenAntiguo'); //RegimenAntiguo
+                xmlwriter_text($xw, 'Antiguo');
+                xmlwriter_end_attribute($xw); //RegimenAntiguo
+            }
 
             xmlwriter_end_element($xw); //</cno:ReferenciasNota>
             xmlwriter_end_element($xw); //</Complemento>
@@ -759,7 +763,7 @@ class Face
                     'Requestor'   => $this->empresa['requestor'],
                     'Transaction' => 'GET_DOCUMENT',
                     'Country'     => $this->empresa['codigopais'],
-                    'Entity'      => $this->fixnit($this->empresa['nit'], true),
+                    'Entity'      => $this->fixnit($this->empresa['nit']),
                     'User'        => $this->empresa['requestor'],
                     'UserName'    => $username,
                     'Data1'       => $this->reimpresion['uuid'],
