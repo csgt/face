@@ -3,8 +3,8 @@ namespace Csgt\Face;
 
 use Log;
 use Exception;
+use SoapClient;
 use DOMDocument;
-use nusoap_client;
 use GuzzleHttp\Client;
 
 class Face
@@ -607,7 +607,7 @@ class Face
             $transaction = 'SYSTEM_REQUEST';
             $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
             $data2       = base64_encode($aXml);
-            $data3       = ($accion == 'emitir' ? $this->factura['referenciainterna'] : '');
+            $data3       = ($accion == 'emitir' ? $this->factura['referenciainterna'] : 'XML');
         }
 
         $username = $this->empresa['usuario'];
@@ -680,8 +680,7 @@ class Face
                 $pdf       = null;
                 break;
             default:
-                $soapClient                   = new nusoap_client($this->getURL(), 'wsdl');
-                $soapClient->soap_defencoding = 'UTF-8';
+                $soapClient = new SoapClient($this->getURL(), ['trace' => true, 'keep_alive' => false]);
 
                 $params = [
                     'Requestor'   => $this->empresa['requestor'],
@@ -695,29 +694,27 @@ class Face
                     'Data3'       => $data3,
                 ];
 
-                $info = $soapClient->call("RequestTransaction", $params);
+                $info = $soapClient->__call('RequestTransaction', ['parameters' => $params]);
 
-                $result = $info['RequestTransactionResult'];
+                $result = $info->RequestTransactionResult;
 
                 Log::info($params);
                 Log::info($aXml);
-                Log::info(json_encode($soapClient->request));
-                Log::info(json_encode($result['Response']));
 
-                if ($result['Response']['Result'] == "false") {
-                    throw new Exception($result['Response']['Description']);
+                if ($result->Response->Result == false) {
+                    throw new Exception($result->Respons->Description);
 
                     return;
                 }
 
-                $uuid   = $result["Response"]["Identifier"]["DocumentGUID"];
-                $xml    = $result["ResponseData"]["ResponseData1"];
+                $uuid   = $result->Response->Identifier->DocumentGUID;
+                $xml    = $result->ResponseData->ResponseData1;
                 $xmlDoc = new DOMDocument();
                 $xmlDoc->loadXML(base64_decode($xml));
 
                 if ($tipo == 'fel') {
-                    $serie     = $result["Response"]["Identifier"]["Batch"];
-                    $documento = $result["Response"]["Identifier"]["Serial"];
+                    $serie     = $result->Response->Identifier->Batch;
+                    $documento = $result->Response->Identifier->Serial;
                     $firma     = $uuid;
                     $id        = null;
                     $nombre    = null;
@@ -756,30 +753,32 @@ class Face
                 break;
             default:
                 $username                     = $this->empresa['usuario'];
-                $soapClient                   = new nusoap_client($this->getURL(), "wsdl");
+                $soapClient                   = new SoapClient($this->getURL(), ['trace' => true]);
                 $soapClient->soap_defencoding = 'UTF-8';
 
-                $info = $soapClient->call("RequestTransaction", [
-                    'Requestor'   => $this->empresa['requestor'],
-                    'Transaction' => 'GET_DOCUMENT',
-                    'Country'     => $this->empresa['codigopais'],
-                    'Entity'      => $this->fixnit($this->empresa['nit']),
-                    'User'        => $this->empresa['requestor'],
-                    'UserName'    => $username,
-                    'Data1'       => $this->reimpresion['uuid'],
-                    'Data2'       => '',
-                    'Data3'       => 'XML PDF',
+                $info = $soapClient->__call("RequestTransaction", [
+                    'parameters' => [
+                        'Requestor'   => $this->empresa['requestor'],
+                        'Transaction' => 'GET_DOCUMENT',
+                        'Country'     => $this->empresa['codigopais'],
+                        'Entity'      => $this->fixnit($this->empresa['nit']),
+                        'User'        => $this->empresa['requestor'],
+                        'UserName'    => $username,
+                        'Data1'       => $this->reimpresion['uuid'],
+                        'Data2'       => '',
+                        'Data3'       => 'XML PDF',
+                    ],
                 ]);
 
                 Log::info(json_encode($soapClient->request));
 
-                $result = $info["RequestTransactionResult"];
+                $result = $info->RequestTransactionResult;
 
-                if ($result["Response"]["Result"] == "false") {
-                    throw new Exception($result["Response"]["Description"]);
+                if ($result->Response->Result == false) {
+                    throw new Exception($result->Response->Description);
                 }
-                $xml = base64_decode($result["ResponseData"]["ResponseData1"]);
-                $pdf = $result["ResponseData"]["ResponseData3"];
+                $xml = base64_decode($result->ResponseData->ResponseData1);
+                $pdf = $result->ResponseData->ResponseData3;
                 break;
         }
 
