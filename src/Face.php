@@ -770,8 +770,6 @@ class Face
                     ],
                 ]);
 
-                Log::info(json_encode($soapClient->request));
-
                 $result = $info->RequestTransactionResult;
 
                 if ($result->Response->Result == false) {
