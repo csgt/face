@@ -607,7 +607,7 @@ class Face
             $transaction = 'SYSTEM_REQUEST';
             $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
             $data2       = base64_encode($aXml);
-            $data3       = ($accion == 'emitir' ? $this->factura['referenciainterna'] : 'XML');
+            $data3       = $this->factura['referenciainterna'];
         }
 
         $username = $this->empresa['usuario'];
@@ -702,7 +702,7 @@ class Face
                 Log::info($aXml);
 
                 if ($result->Response->Result == false) {
-                    throw new Exception($result->Respons->Description);
+                    throw new Exception($result->Response->Description);
 
                     return;
                 }
