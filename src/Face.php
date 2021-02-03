@@ -739,6 +739,29 @@ class Face
         return $respuesta;
     }
 
+    private function consultar_g4s()
+    {
+        $username                     = $this->empresa['usuario'];
+        $soapClient                   = new SoapClient($this->getURL(), ['trace' => true]);
+        $soapClient->soap_defencoding = 'UTF-8';
+
+        $info = $soapClient->__call("RequestTransaction", [
+            'parameters' => [
+                'Requestor'   => $this->empresa['requestor'],
+                'Transaction' => 'GET_DOCUMENT',
+                'Country'     => $this->empresa['codigopais'],
+                'Entity'      => $this->fixnit($this->empresa['nit']),
+                'User'        => $this->empresa['requestor'],
+                'UserName'    => $username,
+                'Data1'       => $this->reimpresion['uuid'],
+                'Data2'       => '',
+                'Data3'       => 'XML PDF',
+            ],
+        ]);
+
+        return $info->RequestTransactionResult;
+    }
+
     public function consultar()
     {
         $xml = '';
@@ -752,28 +775,20 @@ class Face
                 $pdf      = base64_encode((string) $response->getBody());
                 break;
             default:
-                $username                     = $this->empresa['usuario'];
-                $soapClient                   = new SoapClient($this->getURL(), ['trace' => true]);
-                $soapClient->soap_defencoding = 'UTF-8';
-
-                $info = $soapClient->__call("RequestTransaction", [
-                    'parameters' => [
-                        'Requestor'   => $this->empresa['requestor'],
-                        'Transaction' => 'GET_DOCUMENT',
-                        'Country'     => $this->empresa['codigopais'],
-                        'Entity'      => $this->fixnit($this->empresa['nit']),
-                        'User'        => $this->empresa['requestor'],
-                        'UserName'    => $username,
-                        'Data1'       => $this->reimpresion['uuid'],
-                        'Data2'       => '',
-                        'Data3'       => 'XML PDF',
-                    ],
-                ]);
-
-                $result = $info->RequestTransactionResult;
+                $result = $this->consultar_g4s();
 
                 if ($result->Response->Result == false) {
-                    throw new Exception($result->Response->Description);
+                    Log::info($result->Response);
+
+                    if ($result->Response->Description != 'El documento no ha sido emitido') {
+                        throw new Exception($result->Response->Description);
+                    }
+
+                    sleep(2);
+                    $result = $this->consultar_g4s();
+                    if ($result->Response->Result == false) {
+                        throw new Exception($result->Response->Description);
+                    }
                 }
                 $xml = base64_decode($result->ResponseData->ResponseData1);
                 $pdf = $result->ResponseData->ResponseData3;
