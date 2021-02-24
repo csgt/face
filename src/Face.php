@@ -492,7 +492,7 @@ class Face
             xmlwriter_end_element($xw); //</Impuestos>
 
             xmlwriter_start_element($xw, 'dte:Total');
-            xmlwriter_text($xw, $monto - $discount);
+            xmlwriter_text($xw, round($monto - $discount, 2));
             xmlwriter_end_element($xw);
 
             xmlwriter_end_element($xw); //Item
@@ -514,7 +514,7 @@ class Face
         xmlwriter_end_element($xw); //</TotalImpuestos>
 
         xmlwriter_start_element($xw, 'dte:GranTotal'); //<GranTotal>
-        xmlwriter_text($xw, $gTotal);
+        xmlwriter_text($xw, round($gTotal, 2));
         xmlwriter_end_element($xw); //</GranTotal>
         xmlwriter_end_element($xw); //</Totales>
 
@@ -589,6 +589,17 @@ class Face
 
         xmlwriter_end_element($xw); //DatosEmision
         xmlwriter_end_element($xw); //DTE
+
+        if ($this->empresa['footer'] != '') {
+            xmlwriter_start_element($xw, 'dte:Adenda'); //<Adenda>
+            xmlwriter_start_element($xw, 'dte:CamposAdicionales'); //<CamposAdicionales>
+            xmlwriter_start_attribute($xw, 'PieDePagina'); //PieDePagina
+            xmlwriter_text($xw, $this->empresa['footer']);
+            xmlwriter_end_attribute($xw); //CamposAdicionales
+            xmlwriter_end_element($xw); //PieDePagina
+            xmlwriter_end_element($xw); //Adenda
+        }
+
         xmlwriter_end_element($xw); //SAT
         xmlwriter_end_element($xw); //GTDocumento
         xmlwriter_end_document($xw);
