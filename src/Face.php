@@ -429,7 +429,7 @@ class Face
                 $globalDiscount -= $globalDiscountPortion;
                 $discount += $globalDiscountPortion;
             }
-            $gTotal += $monto - $discount;
+            $gTotal += round($monto - $discount, 2);
 
             $montoGravable = round((($monto - $discount) / $factorIVA), 2);
             $impuestos     = $montoGravable * ($this->empresa['iva'] / 100);
