@@ -705,12 +705,13 @@ class Face
                     'Data3'       => $data3,
                 ];
 
+                Log::info($params);
+                Log::info($aXml);
+
+                ini_set('default_socket_timeout', 180);
                 $info = $soapClient->__call('RequestTransaction', ['parameters' => $params]);
 
                 $result = $info->RequestTransactionResult;
-
-                Log::info($params);
-                Log::info($aXml);
 
                 if ($result->Response->Result == false) {
                     throw new Exception($result->Response->Description);
