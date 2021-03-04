@@ -593,8 +593,11 @@ class Face
         if ($this->empresa['footer'] != '') {
             xmlwriter_start_element($xw, 'dte:Adenda'); //<Adenda>
             xmlwriter_start_element($xw, 'dte:CamposAdicionales'); //<CamposAdicionales>
-            xmlwriter_start_attribute($xw, 'PieDePagina'); //PieDePagina
+            xmlwriter_start_element($xw, 'dte:PieDePagina'); //<PieDePagina>
+
             xmlwriter_text($xw, $this->empresa['footer']);
+
+            xmlwriter_end_attribute($xw); //PieDePagina
             xmlwriter_end_attribute($xw); //CamposAdicionales
             xmlwriter_end_element($xw); //PieDePagina
             xmlwriter_end_element($xw); //Adenda
