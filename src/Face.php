@@ -597,9 +597,8 @@ class Face
 
             xmlwriter_text($xw, $this->empresa['footer']);
 
-            xmlwriter_end_attribute($xw); //PieDePagina
-            xmlwriter_end_attribute($xw); //CamposAdicionales
             xmlwriter_end_element($xw); //PieDePagina
+            xmlwriter_end_attribute($xw); //CamposAdicionales
             xmlwriter_end_element($xw); //Adenda
         }
 
