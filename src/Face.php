@@ -62,6 +62,7 @@ class Face
 
     private $empresa = [
         'nombrecomercial'        => '',
+        'nombreemisor'           => '',
         'direccion'              => '',
         'codigopostal'           => '',
         'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
