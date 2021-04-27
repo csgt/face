@@ -1092,6 +1092,7 @@ class Face
     private function fixnit($aNit, $aPadding = false)
     {
         $nit = trim(str_replace('-', '', $aNit));
+        $nit = strtoupper($nit);
         //Si espera los nits con 12 ceros
         if ($aPadding) {
             $nit = str_pad($nit, 12, '0', STR_PAD_LEFT);
