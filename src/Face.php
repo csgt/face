@@ -68,6 +68,7 @@ class Face
         'afiliacioniva'          => 'GEN', //FEL: [GEN, PEQ]
         'retencioniva'           => false,
         'codigoestablecimiento'  => 1,
+        'nombreestablecimiento'  => '',
         'dispositivoelectronico' => '001',
         'moneda'                 => 'GTQ',
         'iva'                    => 12,
@@ -322,7 +323,7 @@ class Face
         xmlwriter_text($xw, $this->empresa['nit']);
         xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'NombreComercial');
-        xmlwriter_text($xw, $this->empresa['nombrecomercial']);
+        xmlwriter_text($xw, $this->empresa['nombreestablecimiento']);
         xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'AfiliacionIVA');
         xmlwriter_text($xw, $this->empresa['afiliacioniva']);
@@ -873,15 +874,21 @@ class Face
 
     public function setEmpresa($aParams)
     {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal', 'email', 'firmaalias', 'firmallave'];
+        $validos = [
+            'regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer',
+            'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva',
+            'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento',
+        ];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->empresa        = array_merge($this->empresa, $aParams);
-        $this->empresa['nit'] = $this->fixnit($this->empresa['nit']);
+
+        $this->empresa                          = array_merge($this->empresa, $aParams);
+        $this->empresa['nit']                   = $this->fixnit($this->empresa['nit']);
+        $this->empresa['nombreestablecimiento'] = strlen($this->empresa['nombreestablecimiento']) == 0 ? $this->empresa['nombrecomercial'] : $this->empresa['nombreestablecimiento'];
     }
 
     public function setFactura($aParams)
@@ -1088,6 +1095,7 @@ class Face
     private function fixnit($aNit, $aPadding = false)
     {
         $nit = trim(str_replace('-', '', $aNit));
+        $nit = strtoupper($nit);
         //Si espera los nits con 12 ceros
         if ($aPadding) {
             $nit = str_pad($nit, 12, '0', STR_PAD_LEFT);
