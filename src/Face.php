@@ -795,7 +795,7 @@ class Face
                 if ($result->Response->Result == false) {
                     Log::info(json_encode($result->Response));
 
-                    sleep(2);
+                    sleep(4);
                     $result = $this->consultar_g4s();
                     if ($result->Response->Result == false) {
                         throw new Exception($result->Response->Description);
