@@ -794,10 +794,6 @@ class Face
                 if ($result->Response->Result == false) {
                     Log::info(json_encode($result->Response));
 
-                    if ($result->Response->Description != 'El documento no ha sido emitido') {
-                        throw new Exception($result->Response->Description);
-                    }
-
                     sleep(2);
                     $result = $this->consultar_g4s();
                     if ($result->Response->Result == false) {
