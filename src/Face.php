@@ -34,54 +34,56 @@ class Face
     ];
 
     private $resolucion = [
-        'tipo'                   => 'FACE63',
-        'serie'                  => '',
         'correlativo'            => 0,
-        'numeroautorizacion'     => '',
         'fecharesolucion'        => '',
-        'rangoinicialautorizado' => 0,
-        'rangofinalautorizado'   => 0,
+        'numeroautorizacion'     => '',
         'proveedorface'          => 'g4s', //g4s, infile
+        'rangofinalautorizado'   => 0,
+        'rangoinicialautorizado' => 0,
+        'serie'                  => '',
+        'tipo'                   => 'FACE63',
     ];
 
     private $factura = [
-        'referenciainterna' => 0,
-        'nit'               => '',
-        'nombre'            => '',
         'direccion'         => '',
         'moneda'            => 'GTQ', //GTQ, USD
+        'nit'               => '',
+        'nombre'            => '',
+        'referenciainterna' => 0,
     ];
 
     private $totales = [
-        'monto'           => 0,
         'descuento'       => 0,
-        'valorSinDRMonto' => 0,
-        'valorConDRMonto' => 0,
         'impuestos'       => 0,
+        'monto'           => 0,
+        'valorConDRMonto' => 0,
+        'valorSinDRMonto' => 0,
     ];
 
     private $empresa = [
-        'nombrecomercial'        => '',
-        'direccion'              => '',
-        'codigopostal'           => '',
-        'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
         'afiliacioniva'          => 'GEN', //FEL: [GEN, PEQ]
-        'retencioniva'           => false,
         'codigoestablecimiento'  => 1,
-        'nombreestablecimiento'  => '',
-        'dispositivoelectronico' => '001',
-        'moneda'                 => 'GTQ',
-        'iva'                    => 12,
         'codigopais'             => 'GT',
-        'nit'                    => '',
-        'footer'                 => '',
-        'requestor'              => '',
-        'usuario'                => '',
+        'codigopostal'           => '',
+        'departamento'           => 'Guatemala',
+        'direccion'              => '',
+        'dispositivoelectronico' => '001',
+        'email'                  => 'email@email.com',
         'firmaalias'             => '',
         'firmallave'             => '',
+        'footer'                 => '',
         'formatos'               => 'XML',
-        'email'                  => 'email@email.com',
+        'iva'                    => 12,
+        'moneda'                 => 'GTQ',
+        'municipio'              => 'Guatemala',
+        'nit'                    => '',
+        'nombrecomercial'        => '',
+        'nombreestablecimiento'  => '',
+        'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
+        'requestor'              => '',
+        'retencioniva'           => false,
         'test'                   => false,
+        'usuario'                => '',
     ];
 
     private $reimpresion = [
@@ -340,10 +342,10 @@ class Face
         xmlwriter_text($xw, $this->empresa['codigopostal']);
         xmlwriter_end_element($xw);
         xmlwriter_start_element($xw, 'dte:Municipio'); //<Municipio />
-        xmlwriter_text($xw, 'Guatemala');
+        xmlwriter_text($xw, $this->empresa['municipio']);
         xmlwriter_end_element($xw);
         xmlwriter_start_element($xw, 'dte:Departamento'); //<Departamento />
-        xmlwriter_text($xw, 'Guatemala');
+        xmlwriter_text($xw, $this->empresa['departamento']);
         xmlwriter_end_element($xw);
         xmlwriter_start_element($xw, 'dte:Pais'); //<Pais />
         xmlwriter_text($xw, 'GT');
@@ -877,7 +879,7 @@ class Face
         $validos = [
             'regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer',
             'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva',
-            'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento',
+            'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento', 'departamento', 'municipio',
         ];
 
         foreach ($aParams as $key => $val) {
