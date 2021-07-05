@@ -137,7 +137,7 @@ class Face
 
         $arr = [
             'nit'       => $response->NIT,
-            'nombre'    => $response->nombre,
+            'nombre'    => html_entity_decode($response->nombre),
             'direccion' => null,
         ];
 
