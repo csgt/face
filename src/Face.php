@@ -16,10 +16,12 @@ class Face
             'g4s'    => [
                 'testurl' => 'https://pruebasfel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
                 'url'     => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
+                'nit'     => 'http://fel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
             ],
             'infile' => [
                 'testurl'   => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
+                'nit'       => '',
                 'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
                 'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
                 'anulacion' => 'https://certificador.feel.com.gt/fel/anulacion/dte/',
@@ -107,6 +109,39 @@ class Face
     private $descuentos      = [
         'SumaDeDescuentos' => 0,
     ];
+
+    public function buscarNit($nit)
+    {
+        if ($this->empresa['requestor'] == '') {
+            throw new Exception('El requestor es requerido');
+        }
+        if ($this->empresa['nit'] == '') {
+            throw new Exception('El NIT de la empresa emisora es requerido');
+        }
+
+        if ($this->resolucion['proveedorface'] != 'g4s') {
+            throw new Exception('Solo G4S tiene consulta por NIT');
+        }
+
+        $params = [
+            'vNIT'      => $nit,
+            'Entity'    => $this->fixnit($this->empresa['nit']),
+            'Requestor' => $this->empresa['requestor'],
+        ];
+        $soap     = new SoapClient($this->urls['fel']['g4s']['nit']);
+        $response = $soap->getNit($params);
+        $response = $response->getNITResult->Response;
+        if (!$response->Result) {
+            abort(404, "NIT no encontrado");
+        }
+
+        $arr = [
+            'nit'    => $response->NIT,
+            'nombre' => $response->nombre,
+        ];
+
+        return $arr;
+    }
 
     public function generar()
     {
