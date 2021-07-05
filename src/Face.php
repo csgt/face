@@ -132,12 +132,13 @@ class Face
         $response = $soap->getNit($params);
         $response = $response->getNITResult->Response;
         if (!$response->Result) {
-            abort(404, "NIT no encontrado");
+            throw new Exception("NIT no encontrado");
         }
 
         $arr = [
-            'nit'    => $response->NIT,
-            'nombre' => $response->nombre,
+            'nit'       => $response->NIT,
+            'nombre'    => $response->nombre,
+            'direccion' => null,
         ];
 
         return $arr;
