@@ -9,7 +9,9 @@ use GuzzleHttp\Client;
 
 class Face
 {
-    private $tipo = 'fel';
+    private $tipo        = 'fel';
+    private const G4S    = 'g4s';
+    private const Infile = 'infile';
 
     private $urls = [
         'fel' => [
@@ -21,7 +23,7 @@ class Face
             'infile' => [
                 'testurl'   => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
-                'nit'       => '',
+                'nit'       => 'https://consultareceptores.feel.com.gt/rest/action',
                 'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
                 'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
                 'anulacion' => 'https://certificador.feel.com.gt/fel/anulacion/dte/',
@@ -31,15 +33,15 @@ class Face
     ];
 
     private $proveedores = [
-        'g4s',
-        'infile',
+        self::G4S,
+        self::Infile,
     ];
 
     private $resolucion = [
         'correlativo'            => 0,
         'fecharesolucion'        => '',
         'numeroautorizacion'     => '',
-        'proveedorface'          => 'g4s', //g4s, infile
+        'proveedorface'          => self::G4S, //g4s, infile
         'rangofinalautorizado'   => 0,
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
@@ -112,34 +114,65 @@ class Face
 
     public function buscarNit($nit)
     {
+        $arr = [];
+
         if ($this->empresa['requestor'] == '') {
             throw new Exception('El requestor es requerido');
         }
-        if ($this->empresa['nit'] == '') {
-            throw new Exception('El NIT de la empresa emisora es requerido');
-        }
+        switch ($this->resolucion['proveedorface']) {
+            case self::G4S:
+                if ($this->empresa['nit'] == '') {
+                    throw new Exception('El NIT de la empresa emisora es requerido');
+                }
 
-        if ($this->resolucion['proveedorface'] != 'g4s') {
-            throw new Exception('Solo G4S tiene consulta por NIT');
-        }
+                $params = [
+                    'vNIT'      => $nit,
+                    'Entity'    => $this->fixnit($this->empresa['nit']),
+                    'Requestor' => $this->empresa['requestor'],
+                ];
+                $soap     = new SoapClient($this->urls['fel'][self::G4S]['nit']);
+                $response = $soap->getNit($params);
+                $response = $response->getNITResult->Response;
+                if (!$response->Result) {
+                    throw new Exception("NIT no encontrado");
+                }
 
-        $params = [
-            'vNIT'      => $nit,
-            'Entity'    => $this->fixnit($this->empresa['nit']),
-            'Requestor' => $this->empresa['requestor'],
-        ];
-        $soap     = new SoapClient($this->urls['fel']['g4s']['nit']);
-        $response = $soap->getNit($params);
-        $response = $response->getNITResult->Response;
-        if (!$response->Result) {
-            throw new Exception("NIT no encontrado");
-        }
+                $arr = [
+                    'nit'       => $response->NIT,
+                    'nombre'    => html_entity_decode($response->nombre),
+                    'direccion' => null,
+                ];
+                break;
+            case self::Infile:
+                if ($this->empresa['usuario'] == '') {
+                    throw new Exception('El usuario de empresa emisora es requerido');
+                }
+                $params = [
+                    'emisor_codigo' => $this->empresa['usuario'],
+                    'emisor_clave'  => $this->empresa['requestor'],
+                    'nit_consulta'  => $nit,
+                ];
 
-        $arr = [
-            'nit'       => $response->NIT,
-            'nombre'    => html_entity_decode($response->nombre),
-            'direccion' => null,
-        ];
+                $client   = new Client;
+                $response = $client->post($this->urls['fel'][self::Infile]['nit'], [
+                    'json' => $params,
+                ]);
+
+                $json = json_decode((string) $response->getBody());
+                if ($json->mensaje != '') {
+                    throw new Exception('NIT no encontrado');
+                }
+                $arr = [
+                    'nit'       => $json->nit,
+                    'nombre'    => html_entity_decode($json->nombre),
+                    'direccion' => null,
+                ];
+                break;
+
+            default:
+                throw new Exception('El proveedor es incorrecto');
+                break;
+        }
 
         return $arr;
     }
@@ -291,7 +324,7 @@ class Face
         xmlwriter_end_attribute($xw);
 
         //Encabezados version 0.1
-        if ($this->resolucion['proveedorface'] == 'g4s') {
+        if ($this->resolucion['proveedorface'] == self::G4S) {
             xmlwriter_start_attribute($xw, 'xmlns:cfe');
             xmlwriter_text($xw, 'http://www.sat.gob.gt/face2/ComplementoFacturaEspecial/0.1.0');
             xmlwriter_end_attribute($xw);
@@ -666,7 +699,7 @@ class Face
 
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
-            case 'infile':
+            case self::Infile:
                 //Firmar SAT
                 $client = new Client;
                 $body   = [
@@ -676,7 +709,7 @@ class Face
                     'alias'        => $this->empresa['firmaalias'],
                     'es_anulacion' => ($accion == 'emitir' ? 'N' : 'S'),
                 ];
-                $response = $client->post($this->urls['fel']['infile']['signature'], [
+                $response = $client->post($this->urls['fel'][self::Infile]['signature'], [
                     'json' => $body,
                 ]);
 
@@ -702,7 +735,7 @@ class Face
                 if ($accion == 'emitir') {
                     $url = $this->getURL();
                 } else {
-                    $url = $this->urls['fel']['infile']['anulacion'];
+                    $url = $this->urls['fel'][self::Infile]['anulacion'];
                 }
 
                 $response = $client->post($url, [
@@ -821,8 +854,8 @@ class Face
         $pdf = '';
 
         switch ($this->resolucion['proveedorface']) {
-            case 'infile':
-                $url      = $this->urls['fel']['infile']['pdf'] . $this->reimpresion['uuid'];
+            case self::Infile:
+                $url      = $this->urls['fel'][self::Infile]['pdf'] . $this->reimpresion['uuid'];
                 $client   = new Client;
                 $response = $client->get($url);
                 $pdf      = base64_encode((string) $response->getBody());
