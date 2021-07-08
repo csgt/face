@@ -115,7 +115,7 @@ class Face
     public function buscarNit($nit)
     {
         $arr = [];
-
+        $nit = $this->fixnit($nit);
         if ($this->empresa['requestor'] == '') {
             throw new Exception('El requestor es requerido');
         }
