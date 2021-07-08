@@ -136,10 +136,19 @@ class Face
                 if (!$response->Result) {
                     throw new Exception("NIT no encontrado");
                 }
+                $nombre = html_entity_decode($response->nombre);
+                $nombre = str_replace(',,', '|', $nombre);
+                $nombre = str_replace(',', ' ', $nombre);
+                $arr    = explode('|', $nombre);
+                if (sizeof($arr) == 2) {
+                    $nombre = $arr[1] . ", " . $arr[0];
+                } else {
+                    $nombre = str_replace('|', ',', $nombre);
+                }
 
                 $arr = [
                     'nit'       => $response->NIT,
-                    'nombre'    => html_entity_decode($response->nombre),
+                    'nombre'    => $nombre,
                     'direccion' => null,
                 ];
                 break;
