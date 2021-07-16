@@ -792,7 +792,7 @@ class Face
                 Log::info($aXml);
 
                 ini_set('default_socket_timeout', 180);
-                $info = $soapClient->__call('RequestTransaction', ['parameters' => $params]);
+                $info = $soapClient->RequestTransaction($params);
 
                 $result = $info->RequestTransactionResult;
 
@@ -834,27 +834,37 @@ class Face
         return $respuesta;
     }
 
-    private function consultar_g4s()
+    private function consultar_g4s($retry = 0)
     {
         $username                     = $this->empresa['usuario'];
         $soapClient                   = new SoapClient($this->getURL(), ['trace' => true]);
         $soapClient->soap_defencoding = 'UTF-8';
 
-        $info = $soapClient->__call("RequestTransaction", [
-            'parameters' => [
-                'Requestor'   => $this->empresa['requestor'],
-                'Transaction' => 'GET_DOCUMENT',
-                'Country'     => $this->empresa['codigopais'],
-                'Entity'      => $this->fixnit($this->empresa['nit']),
-                'User'        => $this->empresa['requestor'],
-                'UserName'    => $username,
-                'Data1'       => $this->reimpresion['uuid'],
-                'Data2'       => '',
-                'Data3'       => 'XML PDF',
-            ],
+        $info = $soapClient->RequestTransaction([
+            'Requestor'   => $this->empresa['requestor'],
+            'Transaction' => 'GET_DOCUMENT',
+            'Country'     => $this->empresa['codigopais'],
+            'Entity'      => $this->fixnit($this->empresa['nit']),
+            'User'        => $this->empresa['requestor'],
+            'UserName'    => $username,
+            'Data1'       => $this->reimpresion['uuid'],
+            'Data2'       => '',
+            'Data3'       => 'PDF',
         ]);
 
-        return $info->RequestTransactionResult;
+        $result = $info->RequestTransactionResult;
+        if ($result->Response->Result == false) {
+            $message = $result->Response->Description;
+            \Log::error("Hubo un error al generar la factura G4S, retrying...");
+            if ($retry < 2 && str_contains($message, 'Could not find file')) {
+                sleep(3);
+
+                return $this->consultar_g4s($retry++);
+            }
+            throw new Exception($message);
+        }
+
+        return $result;
     }
 
     public function consultar()
@@ -871,18 +881,7 @@ class Face
                 break;
             default:
                 $result = $this->consultar_g4s();
-
-                if ($result->Response->Result == false) {
-                    Log::info(json_encode($result->Response));
-
-                    sleep(4);
-                    $result = $this->consultar_g4s();
-                    if ($result->Response->Result == false) {
-                        throw new Exception($result->Response->Description);
-                    }
-                }
-                $xml = base64_decode($result->ResponseData->ResponseData1);
-                $pdf = $result->ResponseData->ResponseData3;
+                $pdf    = $result->ResponseData->ResponseData3;
                 break;
         }
 
