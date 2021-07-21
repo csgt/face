@@ -17,6 +17,7 @@ class Face
         'fel' => [
             'g4s'    => [
                 'testurl' => 'https://pruebasfel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
+                'testnit' => 'http://pruebasfel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
                 'url'     => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
                 'nit'     => 'http://fel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
             ],
@@ -24,6 +25,7 @@ class Face
                 'testurl'   => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'nit'       => 'https://consultareceptores.feel.com.gt/rest/action',
+                'testnit'   => 'https://consultareceptores.feel.com.gt/rest/action',
                 'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
                 'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
                 'anulacion' => 'https://certificador.feel.com.gt/fel/anulacion/dte/',
@@ -130,11 +132,11 @@ class Face
                     'Entity'    => $this->fixnit($this->empresa['nit']),
                     'Requestor' => $this->empresa['requestor'],
                 ];
-                $soap     = new SoapClient($this->urls['fel'][self::G4S]['nit']);
+                $soap     = new SoapClient($this->getNITURL());
                 $response = $soap->getNit($params);
                 $response = $response->getNITResult->Response;
                 if (!$response->Result) {
-                    throw new Exception("NIT no encontrado");
+                    throw new Exception($response->error);
                 }
                 $nombre = html_entity_decode($response->nombre);
                 $nombre = str_replace(',,', '|', $nombre);
@@ -163,13 +165,13 @@ class Face
                 ];
 
                 $client   = new Client;
-                $response = $client->post($this->urls['fel'][self::Infile]['nit'], [
+                $response = $client->post($this->getNITURL(), [
                     'json' => $params,
                 ]);
 
                 $json = json_decode((string) $response->getBody());
                 if ($json->mensaje != '') {
-                    throw new Exception('NIT no encontrado');
+                    throw new Exception('NIT no encontrado en Infile');
                 }
                 $arr = [
                     'nit'       => $json->nit,
@@ -855,8 +857,8 @@ class Face
         $result = $info->RequestTransactionResult;
         if ($result->Response->Result == false) {
             $message = $result->Response->Description;
-            \Log::error("Hubo un error al generar la factura G4S, retrying...");
-            if ($retry < 2 && str_contains($message, 'Could not find file')) {
+            \Log::error("Hubo un error al generar la factura G4S, retrying..." . $retry);
+            if ($retry < 2 && (str_contains($message, 'Could not find file') || str_contains($message, 'no ha sido emitido'))) {
                 sleep(3);
 
                 return $this->consultar_g4s($retry++);
@@ -1189,6 +1191,21 @@ class Face
             $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testurl'];
         } else {
             $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['url'];
+        }
+
+        if ($url == '') {
+            throw new Exception('La dirección del webservice es incorrecta.');
+        }
+
+        return $url;
+    }
+
+    private function getNITURL()
+    {
+        if ($this->empresa['test']) {
+            $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testnit'];
+        } else {
+            $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['nit'];
         }
 
         if ($url == '') {
