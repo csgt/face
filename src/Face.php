@@ -119,12 +119,12 @@ class Face
         $arr = [];
         $nit = $this->fixnit($nit);
         if ($this->empresa['requestor'] == '') {
-            throw new Exception('El requestor es requerido');
+            abort(400, 'El requestor es requerido');
         }
         switch ($this->resolucion['proveedorface']) {
             case self::G4S:
                 if ($this->empresa['nit'] == '') {
-                    throw new Exception('El NIT de la empresa emisora es requerido');
+                    abort(422, 'El NIT de la empresa emisora es requerido');
                 }
 
                 $params = [
@@ -132,11 +132,11 @@ class Face
                     'Entity'    => $this->fixnit($this->empresa['nit']),
                     'Requestor' => $this->empresa['requestor'],
                 ];
-                $soap     = new SoapClient($this->getNITURL());
+                $soap     = new SoapClient($this->urls['fel'][self::G4S]['nit']);
                 $response = $soap->getNit($params);
                 $response = $response->getNITResult->Response;
                 if (!$response->Result) {
-                    throw new Exception($response->error);
+                    abort(404, "NIT no encontrado");
                 }
                 $nombre = html_entity_decode($response->nombre);
                 $nombre = str_replace(',,', '|', $nombre);
@@ -156,7 +156,7 @@ class Face
                 break;
             case self::Infile:
                 if ($this->empresa['usuario'] == '') {
-                    throw new Exception('El usuario de empresa emisora es requerido');
+                    abort(422, 'El usuario de empresa emisora es requerido');
                 }
                 $params = [
                     'emisor_codigo' => $this->empresa['usuario'],
@@ -165,13 +165,13 @@ class Face
                 ];
 
                 $client   = new Client;
-                $response = $client->post($this->getNITURL(), [
+                $response = $client->post($this->urls['fel'][self::Infile]['nit'], [
                     'json' => $params,
                 ]);
 
                 $json = json_decode((string) $response->getBody());
                 if ($json->mensaje != '') {
-                    throw new Exception('NIT no encontrado en Infile');
+                    abort(404, 'NIT no encontrado');
                 }
                 $arr = [
                     'nit'       => $json->nit,
@@ -181,7 +181,7 @@ class Face
                 break;
 
             default:
-                throw new Exception('El proveedor es incorrecto');
+                abort(422, 'El proveedor es incorrecto');
                 break;
         }
 
