@@ -5,23 +5,25 @@ use Log;
 use Exception;
 use SoapClient;
 use DOMDocument;
+use Carbon\Carbon;
 use GuzzleHttp\Client;
 
 class Face
 {
-    private $tipo        = 'fel';
-    private const G4S    = 'g4s';
-    private const Infile = 'infile';
+    private $tipo               = 'fel';
+    private const G4S           = 'g4s';
+    private const Infile        = 'infile';
+    private const Guatefacturas = 'guatefacturas';
 
     private $urls = [
         'fel' => [
-            'g4s'    => [
+            'g4s'           => [
                 'testurl' => 'https://pruebasfel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
                 'testnit' => 'http://pruebasfel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
                 'url'     => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
                 'nit'     => 'http://fel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
             ],
-            'infile' => [
+            'infile'        => [
                 'testurl'   => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
                 'nit'       => 'https://consultareceptores.feel.com.gt/rest/action',
@@ -31,19 +33,26 @@ class Face
                 'anulacion' => 'https://certificador.feel.com.gt/fel/anulacion/dte/',
                 'pdf'       => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
             ],
+            'guatefacturas' => [
+                'testurl'      => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
+                'url'          => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
+                'testuser'     => 'usr_guatefac',
+                'testpassword' => 'usrguatefac',
+            ],
         ],
     ];
 
     private $proveedores = [
         self::G4S,
         self::Infile,
+        self::Guatefacturas,
     ];
 
     private $resolucion = [
         'correlativo'            => 0,
         'fecharesolucion'        => '',
         'numeroautorizacion'     => '',
-        'proveedorface'          => self::G4S, //g4s, infile
+        'proveedorface'          => self::G4S, //g4s, infile, guatefacturas
         'rangofinalautorizado'   => 0,
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
@@ -52,7 +61,7 @@ class Face
 
     private $factura = [
         'direccion'         => '',
-        'moneda'            => 'GTQ', //GTQ, USD
+        'moneda'            => 'GTQ', //GTQ, USD, 1 (Guatefacturas)
         'nit'               => '',
         'nombre'            => '',
         'referenciainterna' => 0,
@@ -205,7 +214,15 @@ class Face
 
         switch ($this->tipo) {
             case 'fel':
-                return $this->fel();
+                switch ($this->resolucion['proveedorface']) {
+                    case self::Guatefacturas:
+                        return $this->felGuatefacturas();
+                        break;
+
+                    default:
+                        return $this->fel();
+                        break;
+                }
                 break;
             default:
                 throw new Exception('El tipo de documento no es conocido');
@@ -689,24 +706,192 @@ class Face
         xmlwriter_end_element($xw); //GTDocumento
         xmlwriter_end_document($xw);
 
-        return $this->sendXML(xmlwriter_output_memory($xw), 'fel');
+        return $this->sendXML(xmlwriter_output_memory($xw), 'emitir');
+        //echo xmlwriter_output_memory($xw);
+    }
+
+    public function felGuatefacturas()
+    {
+        if ($this->empresa['nombrecomercial'] == '') {
+            throw new Exception('El nombre comercial del emisor es requerido');
+        }
+
+        if ($this->empresa['direccion'] == '') {
+            throw new Exception('La dirección del emisor es requerido');
+        }
+
+        $factorIVA      = 1 + ($this->empresa['iva'] / 100);
+        $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
+
+        $xw = xmlwriter_open_memory();
+        xmlwriter_set_indent($xw, 1);
+        $res = xmlwriter_set_indent_string($xw, '    ');
+        xmlwriter_start_document($xw, '1.0', 'UTF-8');
+
+        xmlwriter_start_element($xw, 'DocElectronico'); //<DocElectronico>
+
+        $gMonto         = 0;
+        $gTotal         = 0;
+        $gImpuestos     = 0;
+        $gDescuentos    = 0;
+        $gMontoGravable = 0;
+
+        $xwd = xmlwriter_open_memory();
+        foreach ($this->items as $item) {
+            $monto    = $item['precio'] * $item['cantidad'];
+            $discount = $item['descuento'];
+
+            if ($item['precio'] > 0 && $globalDiscount > 0) {
+                $diff                  = $monto - $discount;
+                $globalDiscountPortion = 0;
+                if ($globalDiscount >= $diff) {
+                    $globalDiscountPortion = $diff;
+                } else {
+                    $globalDiscountPortion = $globalDiscount;
+                }
+                $globalDiscount -= $globalDiscountPortion;
+                $discount += $globalDiscountPortion;
+            }
+            $discount = round($discount, 6);
+            $gTotal += round($monto - $discount, 2);
+            $montoGravable = round((($monto - $discount) / $factorIVA), 2);
+            $impuestos     = $montoGravable * ($this->empresa['iva'] / 100);
+            $gImpuestos += $impuestos;
+            $gDescuentos += $discount;
+            $gMonto += $monto;
+            $gMontoGravable += $montoGravable;
+
+            xmlwriter_start_element($xwd, 'Productos'); //Productos
+
+            xmlwriter_write_element($xwd, 'Producto', $item['ean']);
+            xmlwriter_write_element($xwd, 'Descripcion', $item['descripcion'] . $item['descripcionAmpliada']);
+            xmlwriter_write_element($xwd, 'Medida', $item['unidad']);
+            xmlwriter_write_element($xwd, 'Cantidad', $item['cantidad']);
+            xmlwriter_write_element($xwd, 'Precio', $item['precio']);
+            xmlwriter_write_element($xwd, 'PorcDesc', 0);
+            xmlwriter_write_element($xwd, 'ImpBruto', $monto);
+            xmlwriter_write_element($xwd, 'ImpDescuento', $discount);
+            xmlwriter_write_element($xwd, 'ImpExento', 0.00);
+            xmlwriter_write_element($xwd, 'ImpOtros', 0.00);
+            xmlwriter_write_element($xwd, 'ImpNeto', $montoGravable);
+            xmlwriter_write_element($xwd, 'ImpIsr', 0.00);
+            xmlwriter_write_element($xwd, 'ImpIva', $impuestos);
+            xmlwriter_write_element($xwd, 'ImpTotal', $monto);
+            xmlwriter_write_element($xwd, 'TipoVentaDet', substr($item['tipo'], 0, 1)); //B,S
+            xmlwriter_write_element($xwd, 'DatosAdicionalesProd');
+
+            // xmlwriter_start_element($xwd, 'MontoGravable');
+            // xmlwriter_text($xwd, $montoGravable);
+            // xmlwriter_end_element($xwd);
+
+            // xmlwriter_start_element($xwd, 'MontoImpuesto');
+            // xmlwriter_text($xwd, $impuestos);
+            // xmlwriter_end_element($xwd);
+
+            // xmlwriter_start_element($xwd, 'Total');
+            // xmlwriter_text($xwd, round($monto - $discount, 2));
+            // xmlwriter_end_element($xwd);
+
+            xmlwriter_end_element($xwd); //Productos
+        }
+
+        xmlwriter_start_element($xw, 'Encabezado'); //<Encabezado>
+
+        xmlwriter_start_element($xw, 'Receptor'); //<Receptor>
+        xmlwriter_start_element($xw, 'NITReceptor');
+        xmlwriter_text($xw, $this->factura['nit']);
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'Nombre');
+        xmlwriter_text($xw, $this->factura['nombre']);
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Direccion');
+        xmlwriter_text($xw, $this->factura['direccion']);
+        xmlwriter_end_element($xw);
+        xmlwriter_end_element($xw); //</Receptor>
+
+        xmlwriter_start_element($xw, 'InfoDoc'); //<InfoDoc>
+        xmlwriter_start_element($xw, 'TipoVenta');
+        xmlwriter_text($xw, 'B'); //Esto deberia ir en el detalle, wtf?
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'DestinoVenta');
+        xmlwriter_text($xw, '1');
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'Fecha');
+        xmlwriter_text($xw, Carbon::now('GMT-6')->format('d/m/Y'));
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'Moneda');
+        xmlwriter_text($xw, $this->factura['moneda']);
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'Tasa');
+        xmlwriter_text($xw, 1);
+        xmlwriter_end_element($xw);
+        xmlwriter_start_element($xw, 'Referencia');
+        xmlwriter_text($xw, $this->factura['referenciainterna']);
+        xmlwriter_end_element($xw);
+        xmlwriter_end_element($xw); //</InfoDoc>
+
+        xmlwriter_start_element($xw, 'Totales'); //<Totales>
+
+        xmlwriter_start_element($xw, 'Bruto');
+        xmlwriter_text($xw, round($gMonto, 2));
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Descuento');
+        xmlwriter_text($xw, round($gDescuentos, 2));
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Exento');
+        xmlwriter_text($xw, 0.00);
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Otros');
+        xmlwriter_text($xw, 0.00);
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Neto');
+        xmlwriter_text($xw, $gMontoGravable);
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Isr');
+        xmlwriter_text($xw, 0.00);
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Iva');
+        xmlwriter_text($xw, $gImpuestos);
+        xmlwriter_end_element($xw);
+
+        xmlwriter_start_element($xw, 'Total');
+        xmlwriter_text($xw, round($gTotal, 2));
+        xmlwriter_end_element($xw);
+        xmlwriter_end_element($xw); //</Totales>
+
+        xmlwriter_end_element($xw); //</Encabezado>
+
+        xmlwriter_start_element($xw, 'Detalles'); //<Detalles>
+        xmlwriter_write_raw($xw, xmlwriter_output_memory($xwd));
+        xmlwriter_start_element($xw, 'DocAsociados'); //DocAsociados
+        xmlwriter_end_element($xw);
+        xmlwriter_end_element($xw); //</Detalles>
+
+        xmlwriter_end_element($xw); //DocElectronico
+        xmlwriter_end_document($xw);
+
+        return $this->sendXML(xmlwriter_output_memory($xw), 'emitir');
         //echo xmlwriter_output_memory($xw);
     }
 
     /****************************************/
     /* $accion = [emitir, anular]
     /****************************************/
-    public function sendXML($aXml, $tipo = 'fel', $accion = 'emitir')
+    public function sendXML($aXml, $accion = 'emitir')
     {
-        if ($tipo == 'fel') {
-            $entity      = $this->empresa['nit'];
-            $transaction = 'SYSTEM_REQUEST';
-            $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
-            $data2       = base64_encode($aXml);
-            $data3       = $this->factura['referenciainterna'];
-        }
-
-        $username = $this->empresa['usuario'];
+        $entity      = trim($this->empresa['nit']);
+        $transaction = 'SYSTEM_REQUEST';
+        $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
+        $data2       = base64_encode($aXml);
+        $data3       = $this->factura['referenciainterna'];
+        $username    = $this->empresa['usuario'];
 
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
@@ -726,7 +911,7 @@ class Face
 
                 $firma = json_decode((string) $response->getBody());
                 if ($firma->resultado == false) {
-                    abort(501, $firma->descripcion);
+                    abort(400, $firma->descripcion);
                 }
 
                 Log::info($firma->archivo);
@@ -760,10 +945,10 @@ class Face
                     $err = collect($json->descripcion_errores)->reduce(function ($carry, $e) {
                         return $carry . $e->mensaje_error . ' <br> ';
                     });
-                    abort(501, $err);
+                    abort(400, $err);
                 }
 
-                //abort(501, json_encode($json));
+                //abort(400, json_encode($json));
                 $uuid      = $json->uuid;
                 $serie     = $json->serie;
                 $documento = $json->numero;
@@ -775,6 +960,54 @@ class Face
                 $html      = null;
                 $pdf       = null;
                 break;
+
+            case self::Guatefacturas:
+                $soapParams = [
+                    'trace'      => 1,
+                    'keep_alive' => 0,
+                    'login'      => $this->getUserPassword()['user'],
+                    'password'   => $this->getUserPassword()['password'],
+                ];
+                $soapClient = new SoapClient($this->getURL(), $soapParams);
+                print_r($aXml);
+                //TODO: Fix data quemada
+                $params = [
+                    'pUsuario'         => $username,
+                    'pPassword'        => $this->empresa['requestor'],
+                    'pNitEmisor'       => $entity,
+                    'pEstablecimiento' => 1,
+                    'pTipoDoc'         => 1,
+                    'pIdMaquina'       => '1',
+                    'pTipoRespuesta'   => 'R',
+                    'pXml'             => $aXml,
+                ];
+
+                //print_r(json_encode($params, JSON_PRETTY_PRINT));
+                ini_set('default_socket_timeout', 180);
+                try {
+                    $result = $soapClient->__soapCall('generaDocumento', $params);
+                } catch (SoapFault $exception) {
+                    abort(400, $exception->getMessage());
+                }
+
+                $xml = simplexml_load_string($result);
+
+                if (!$xml->Serie) {
+                    abort(400, $xml[0]);
+                }
+
+                $serie     = $xml->Serie;
+                $documento = $xml->Preimpreso;
+                $uuid      = $xml->NumeroAutorizacion;
+                $firma     = $uuid;
+                $id        = null;
+                $nombre    = null;
+                $direccion = null;
+                $html      = null;
+                $pdf       = null;
+
+                break;
+
             default:
                 $soapClient = new SoapClient($this->getURL(), ['trace' => true, 'keep_alive' => false]);
 
@@ -809,16 +1042,14 @@ class Face
                 $xmlDoc = new DOMDocument();
                 $xmlDoc->loadXML(base64_decode($xml));
 
-                if ($tipo == 'fel') {
-                    $serie     = $result->Response->Identifier->Batch;
-                    $documento = $result->Response->Identifier->Serial;
-                    $firma     = $uuid;
-                    $id        = null;
-                    $nombre    = null;
-                    $direccion = null;
-                    $html      = null;
-                    $pdf       = null;
-                }
+                $serie     = $result->Response->Identifier->Batch;
+                $documento = $result->Response->Identifier->Serial;
+                $firma     = $uuid;
+                $id        = null;
+                $nombre    = null;
+                $direccion = null;
+                $html      = null;
+                $pdf       = null;
                 break;
         }
 
@@ -974,7 +1205,7 @@ class Face
 
     public function setFactura($aParams)
     {
-        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal'];
+        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal', 'moneda'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -1213,6 +1444,23 @@ class Face
         }
 
         return $url;
+    }
+
+    private function getUserPassword()
+    {
+        if ($this->empresa['test']) {
+            $user     = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testuser'];
+            $password = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testpassword'];
+        } else {
+            $user     = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['user'];
+            $password = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['password'];
+        }
+
+        if ($user == '') {
+            throw new Exception('El webservice no tiene configurado usuario/password.');
+        }
+
+        return ['user' => $user, 'password' => $password];
     }
 
 }

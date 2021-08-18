@@ -1,6 +1,6 @@
 {
     "name": "csgt/face",
-    "description": "",
+    "description": "FEL implementation for Guatemala",
     "authors": [
         {
             "name": "Softlogic",
@@ -8,7 +8,8 @@
         }
     ],
     "require": {
-        "php": ">=7.0.0"
+        "php": ">=7.0.0",
+        "ext-soap": "*"
     },
     "autoload": {
         "classmap": [],
