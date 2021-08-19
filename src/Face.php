@@ -1169,7 +1169,8 @@ class Face
         $validos = [
             'regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer',
             'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva',
-            'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento', 'departamento', 'municipio',
+            'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento', 'departamento', 'municipio', 'logo',
+            'sucursal',
         ];
 
         foreach ($aParams as $key => $val) {
@@ -1200,7 +1201,7 @@ class Face
 
     public function setReimpresion($aParams)
     {
-        $validos = ['uuid', 'fecha', 'serie', 'documento'];
+        $validos = ['uuid', 'fecha', 'serie', 'documento', 'fecha_certificacion'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
