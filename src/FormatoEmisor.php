@@ -1,6 +1,10 @@
 <?php
 namespace Csgt\Face;
 
+use Exception;
+use SoapClient;
+use GuzzleHttp\Client;
+
 class FormatoEmisor
 {
     private static function consultar_g4s($empresa, $reimpresion, $url, $nit, $retry = 0)

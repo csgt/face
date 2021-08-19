@@ -57,7 +57,7 @@ class Face
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
         'tipo'                   => 'FACE63',
-        'formato'                => FormatoTicket::class,
+        'formato'                => 'FormatoEmisor',
     ];
 
     private $factura = [
@@ -1089,7 +1089,17 @@ class Face
             'descuentos'  => $this->descuentos,
         ];
 
-        $response = $this->resolucion['formato']::generar($params);
+        switch ($this->resolucion['formato']) {
+            case 'FormatoTicket':
+                $formato = FormatoTicket::class;
+                break;
+
+            default:
+                $formato = FormatoEmisor::class;
+                break;
+        }
+
+        $response = $formato::generar($params);
 
         return $response;
     }
