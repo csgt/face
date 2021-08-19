@@ -11,6 +11,9 @@
         "php": ">=7.0.0",
         "ext-soap": "*"
     },
+    "require-dev": {
+        "elibyy/tcpdf-laravel": "^8.1"
+    },
     "autoload": {
         "classmap": [],
         "psr-4": {

@@ -57,6 +57,7 @@ class Face
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
         'tipo'                   => 'FACE63',
+        'formato'                => FormatoTicket::class,
     ];
 
     private $factura = [
@@ -102,8 +103,10 @@ class Face
     ];
 
     private $reimpresion = [
-        'uuid'  => '',
-        'fecha' => '',
+        'uuid'      => '',
+        'fecha'     => '',
+        'serie'     => '',
+        'documento' => '',
     ];
 
     private $anulacion = [
@@ -1067,61 +1070,28 @@ class Face
         return $respuesta;
     }
 
-    private function consultar_g4s($retry = 0)
-    {
-        $username                     = $this->empresa['usuario'];
-        $soapClient                   = new SoapClient($this->getURL(), ['trace' => true]);
-        $soapClient->soap_defencoding = 'UTF-8';
-
-        $info = $soapClient->RequestTransaction([
-            'Requestor'   => $this->empresa['requestor'],
-            'Transaction' => 'GET_DOCUMENT',
-            'Country'     => $this->empresa['codigopais'],
-            'Entity'      => $this->fixnit($this->empresa['nit']),
-            'User'        => $this->empresa['requestor'],
-            'UserName'    => $username,
-            'Data1'       => $this->reimpresion['uuid'],
-            'Data2'       => '',
-            'Data3'       => 'PDF',
-        ]);
-
-        $result = $info->RequestTransactionResult;
-        if ($result->Response->Result == false) {
-            $message = $result->Response->Description;
-            \Log::error("Hubo un error al generar la factura G4S, retrying..." . $retry);
-            if ($retry < 2 && (str_contains($message, 'Could not find file') || str_contains($message, 'no ha sido emitido'))) {
-                sleep(3);
-
-                return $this->consultar_g4s($retry++);
-            }
-            throw new Exception($message);
-        }
-
-        return $result;
-    }
-
     public function consultar()
     {
-        $xml = '';
-        $pdf = '';
-
-        switch ($this->resolucion['proveedorface']) {
-            case self::Infile:
-                $url      = $this->urls['fel'][self::Infile]['pdf'] . $this->reimpresion['uuid'];
-                $client   = new Client;
-                $response = $client->get($url);
-                $pdf      = base64_encode((string) $response->getBody());
-                break;
-            default:
-                $result = $this->consultar_g4s();
-                $pdf    = $result->ResponseData->ResponseData3;
-                break;
-        }
-
-        return [
-            'xml' => $xml,
-            'pdf' => $pdf,
+        $response = [
+            'xml' => '',
+            'pdf' => '',
         ];
+
+        $params = [
+            'resolucion'  => $this->resolucion,
+            'urls'        => $this->urls,
+            'reimpresion' => $this->reimpresion,
+            'empresa'     => $this->empresa,
+            'url'         => $this->getURL(),
+            'nit'         => $this->fixNit($this->empresa['nit']),
+            'factura'     => $this->factura,
+            'items'       => $this->items,
+            'descuentos'  => $this->descuentos,
+        ];
+
+        $response = $this->resolucion['formato']::generar($params);
+
+        return $response;
     }
 
     public function anular()
@@ -1220,7 +1190,7 @@ class Face
 
     public function setReimpresion($aParams)
     {
-        $validos = ['uuid', 'fecha'];
+        $validos = ['uuid', 'fecha', 'serie', 'documento'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
