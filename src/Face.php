@@ -57,7 +57,7 @@ class Face
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
         'tipo'                   => 'FACE63',
-        'formato'                => 'FormatoEmisor',
+        'formato'                => 'FormatoEmisor', //FormatoEmisor, FormatoTicket
     ];
 
     private $factura = [
@@ -100,13 +100,15 @@ class Face
         'retencioniva'           => false,
         'test'                   => false,
         'usuario'                => '',
+        'logo'                   => null,
     ];
 
     private $reimpresion = [
-        'uuid'      => '',
-        'fecha'     => '',
-        'serie'     => '',
-        'documento' => '',
+        'uuid'               => '',
+        'fecha'              => '',
+        'serie'              => '',
+        'documento'          => '',
+        'fechacertificacion' => '',
     ];
 
     private $anulacion = [
@@ -972,7 +974,6 @@ class Face
                     'password'   => $this->getUserPassword()['password'],
                 ];
                 $soapClient = new SoapClient($this->getURL(), $soapParams);
-                print_r($aXml);
                 //TODO: Fix data quemada
                 $params = [
                     'pUsuario'         => $username,
@@ -993,19 +994,23 @@ class Face
                     abort(400, $exception->getMessage());
                 }
 
-                $xml = simplexml_load_string($result);
+                try {
+                    $xml = simplexml_load_string($result);
+                } catch (\Throwable $th) {
+                    abort(400, json_encode($result));
+                }
 
                 if (!$xml->Serie) {
                     abort(400, $xml[0]);
                 }
 
-                $serie     = $xml->Serie;
-                $documento = $xml->Preimpreso;
-                $uuid      = $xml->NumeroAutorizacion;
+                $serie     = $xml->Serie[0];
+                $documento = $xml->Preimpreso[0];
+                $uuid      = $xml->NumeroAutorizacion[0];
                 $firma     = $uuid;
                 $id        = null;
-                $nombre    = null;
-                $direccion = null;
+                $nombre    = $xml->Nombre[0];
+                $direccion = $xml->Direccion[0];
                 $html      = null;
                 $pdf       = null;
 
@@ -1089,16 +1094,8 @@ class Face
             'descuentos'  => $this->descuentos,
         ];
 
-        switch ($this->resolucion['formato']) {
-            case 'FormatoTicket':
-                $formato = FormatoTicket::class;
-                break;
-
-            default:
-                $formato = FormatoEmisor::class;
-                break;
-        }
-
+        $class    = '\Csgt\Face\\' . $this->resolucion['formato'];
+        $formato  = new $class;
         $response = $formato::generar($params);
 
         return $response;
@@ -1160,7 +1157,11 @@ class Face
         if (in_array($this->resolucion['tipo'], $fels)) {
             $this->tipo = 'fel';
         } else {
-            throw new Exception('El tipo de documento no es conocido');
+            throw new Exception('El tipo de documento es desconocido');
+        }
+
+        if (!in_array($this->resolucion['formato'], ['FormatoEmisor', 'FormatoTicket'])) {
+            throw new Exception('El formato es desconocido');
         }
     }
 
@@ -1170,7 +1171,6 @@ class Face
             'regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer',
             'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva',
             'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento', 'departamento', 'municipio', 'logo',
-            'sucursal',
         ];
 
         foreach ($aParams as $key => $val) {
@@ -1201,7 +1201,7 @@ class Face
 
     public function setReimpresion($aParams)
     {
-        $validos = ['uuid', 'fecha', 'serie', 'documento', 'fecha_certificacion'];
+        $validos = ['uuid', 'fecha', 'serie', 'documento', 'fechacertificacion'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
