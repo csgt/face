@@ -2,7 +2,6 @@
 namespace Csgt\Face;
 
 use Log;
-use Exception;
 use SoapClient;
 use DOMDocument;
 use Carbon\Carbon;
@@ -62,7 +61,7 @@ class Face
 
     private $factura = [
         'direccion'         => '',
-        'moneda'            => 'GTQ', //GTQ, USD, 1 (Guatefacturas)
+        'moneda'            => 'GTQ', //GTQ, USD
         'nit'               => '',
         'nombre'            => '',
         'referenciainterna' => 0,
@@ -205,16 +204,16 @@ class Face
     public function generar()
     {
         if ($this->empresa['requestor'] == '') {
-            throw new Exception('El requestor es requerido');
+            abort(400, 'El requestor es requerido');
         }
         if ($this->empresa['usuario'] == '') {
-            throw new Exception('El usuario es requerido');
+            abort(400, 'El usuario es requerido');
         }
         if ($this->empresa['nit'] == '') {
-            throw new Exception('El NIT de la empresa emisora es requerido');
+            abort(400, 'El NIT de la empresa emisora es requerido');
         }
         if ($this->factura['nit'] == '') {
-            throw new Exception('El NIT del comprador es requerido');
+            abort(400, 'El NIT del comprador es requerido');
         }
 
         switch ($this->tipo) {
@@ -230,7 +229,7 @@ class Face
                 }
                 break;
             default:
-                throw new Exception('El tipo de documento no es conocido');
+                abort(400, 'El tipo de documento no es conocido');
                 break;
         }
     }
@@ -238,15 +237,15 @@ class Face
     public function felAnular()
     {
         if ($this->anulacion['fecha'] == '') {
-            throw new Exception('El fecha del documento a anualar es requerida. Se debe correr el método setAnulacion');
+            abort(400, 'El fecha del documento a anualar es requerida. Se debe correr el método setAnulacion');
         }
 
         if ($this->anulacion['nit'] == '') {
-            throw new Exception('El NIT a anualar es requerido. Se debe correr el método setAnulacion');
+            abort(400, 'El NIT a anualar es requerido. Se debe correr el método setAnulacion');
         }
 
         if ($this->anulacion['uid'] == '') {
-            throw new Exception('El UID del documento a anualar es requerido. Se debe correr el método setAnulacion');
+            abort(400, 'El UID del documento a anualar es requerido. Se debe correr el método setAnulacion');
         }
 
         $xw = xmlwriter_open_memory();
@@ -326,16 +325,16 @@ class Face
     public function fel()
     {
         if ($this->empresa['nombrecomercial'] == '') {
-            throw new Exception('El nombre comercial del emisor es requerido');
+            abort(400, 'El nombre comercial del emisor es requerido');
         }
 
         if ($this->empresa['direccion'] == '') {
-            throw new Exception('La dirección del emisor es requerido');
+            abort(400, 'La dirección del emisor es requerido');
         }
 
         if ($this->resolucion['proveedorface'] == 'infile') {
             if ($this->empresa['firmallave'] == '') {
-                throw new Exception('La llave para firma es requerida.  Revise su configuracion de empresa.');
+                abort(400, 'La llave para firma es requerida.  Revise su configuracion de empresa.');
             }
         }
 
@@ -718,11 +717,11 @@ class Face
     public function felGuatefacturas()
     {
         if ($this->empresa['nombrecomercial'] == '') {
-            throw new Exception('El nombre comercial del emisor es requerido');
+            abort(400, 'El nombre comercial del emisor es requerido');
         }
 
         if ($this->empresa['direccion'] == '') {
-            throw new Exception('La dirección del emisor es requerido');
+            abort(400, 'La dirección del emisor es requerido');
         }
 
         $factorIVA      = 1 + ($this->empresa['iva'] / 100);
@@ -826,7 +825,7 @@ class Face
         xmlwriter_text($xw, Carbon::now('GMT-6')->format('d/m/Y'));
         xmlwriter_end_element($xw);
         xmlwriter_start_element($xw, 'Moneda');
-        xmlwriter_text($xw, $this->factura['moneda']);
+        xmlwriter_text($xw, $this->factura['moneda'] == 'GTQ' ? 1 : 2);
         xmlwriter_end_element($xw);
         xmlwriter_start_element($xw, 'Tasa');
         xmlwriter_text($xw, 1);
@@ -1040,7 +1039,7 @@ class Face
                 $result = $info->RequestTransactionResult;
 
                 if ($result->Response->Result == false) {
-                    throw new Exception($result->Response->Description);
+                    abort(400, $result->Response->Description);
 
                     return;
                 }
@@ -1149,7 +1148,7 @@ class Face
         $this->resolucion = array_merge($this->resolucion, $aParams);
 
         if (!in_array($this->resolucion['proveedorface'], $this->proveedores)) {
-            throw new Exception('El proveedor de facturas es incorrecto');
+            abort(400, 'El proveedor de facturas es incorrecto');
         }
 
         $fels = ['FACT', 'FPEQ', 'NCRE'];
@@ -1157,11 +1156,11 @@ class Face
         if (in_array($this->resolucion['tipo'], $fels)) {
             $this->tipo = 'fel';
         } else {
-            throw new Exception('El tipo de documento es desconocido');
+            abort(400, 'El tipo de documento es desconocido');
         }
 
         if (!in_array($this->resolucion['formato'], ['FormatoEmisor', 'FormatoTicket'])) {
-            throw new Exception('El formato es desconocido');
+            abort(400, 'El formato es desconocido');
         }
     }
 
@@ -1406,7 +1405,7 @@ class Face
         }
 
         if ($url == '') {
-            throw new Exception('La dirección del webservice es incorrecta.');
+            abort(400, 'La dirección del webservice es incorrecta.');
         }
 
         return $url;
@@ -1421,7 +1420,7 @@ class Face
         }
 
         if ($url == '') {
-            throw new Exception('La dirección del webservice es incorrecta.');
+            abort(400, 'La dirección del webservice es incorrecta.');
         }
 
         return $url;
@@ -1438,7 +1437,7 @@ class Face
         }
 
         if ($user == '') {
-            throw new Exception('El webservice no tiene configurado usuario/password.');
+            abort(400, 'El webservice no tiene configurado usuario/password.');
         }
 
         return ['user' => $user, 'password' => $password];
