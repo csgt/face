@@ -1142,7 +1142,7 @@ class Face
 
     public function setResolucion($aParams)
     {
-        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion', 'fecharesolucion', 'rangoinicialautorizado', 'rangofinalautorizado', 'proveedorface'];
+        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion', 'fecharesolucion', 'rangoinicialautorizado', 'rangofinalautorizado', 'proveedorface', 'formato'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
