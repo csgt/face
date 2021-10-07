@@ -918,6 +918,7 @@ class Face
                     abort(400, $firma->descripcion);
                 }
 
+                Log::info($aXml);
                 Log::info($firma->archivo);
                 //Certificar
                 $client  = new Client;
