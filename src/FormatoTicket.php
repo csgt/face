@@ -21,9 +21,12 @@ class FormatoTicket
         $pdf->addPage('P', [66.5, 230]);
 
         $y = 5;
-        $pdf->image($empresa['logo'], 5, $y, 20, 0, '', '', '', false, 300, 'C');
 
-        $y = 30;
+        if ($empresa['logo'] != '') {
+            $pdf->image($empresa['logo'], 5, $y, 20, 0, '', '', '', false, 300, 'C');
+            $y = 30;
+        }
+
         $pdf->multicell(0, 1, mb_strtoupper($empresa['nombreestablecimiento']), 0, 'C', 0, 1, 5, $y, true, 0);
         $y += 6;
         $pdf->multiCell(0, 1, 'NIT:' . $params['nit'], 0, 'C', 0, 2, 5, $y, true, 0);

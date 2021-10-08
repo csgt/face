@@ -184,7 +184,7 @@ class Face
 
                 $json = json_decode((string) $response->getBody());
                 if ($json->mensaje != '') {
-                    abort(404, 'NIT no encontrado');
+                    abort(404, $json->mensaje);
                 }
                 $arr = [
                     'nit'       => $json->nit,
@@ -1145,7 +1145,8 @@ class Face
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->resolucion = array_merge($this->resolucion, $aParams);
+        $this->resolucion                  = array_merge($this->resolucion, $aParams);
+        $this->resolucion['proveedorface'] = strtolower($this->resolucion['proveedorface']);
 
         if (!in_array($this->resolucion['proveedorface'], $this->proveedores)) {
             abort(400, 'El proveedor de facturas es incorrecto');
@@ -1179,6 +1180,8 @@ class Face
         }
 
         $this->empresa                          = array_merge($this->empresa, $aParams);
+        $this->empresa['nombrecomercial']       = preg_replace('/[\x00-\x1F\x7F]/u', '', $this->empresa['nombrecomercial']);
+        $this->empresa['nombreestablecimiento'] = preg_replace('/[\x00-\x1F\x7F]/u', '', $this->empresa['nombreestablecimiento']);
         $this->empresa['nit']                   = $this->fixnit($this->empresa['nit']);
         $this->empresa['nombreestablecimiento'] = strlen($this->empresa['nombreestablecimiento']) == 0 ? $this->empresa['nombrecomercial'] : $this->empresa['nombreestablecimiento'];
     }
