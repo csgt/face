@@ -890,6 +890,8 @@ class Face
     /****************************************/
     public function sendXML($aXml, $accion = 'emitir')
     {
+        Log::info($aXml);
+
         $entity      = trim($this->empresa['nit']);
         $transaction = 'SYSTEM_REQUEST';
         $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
@@ -1031,7 +1033,6 @@ class Face
                 ];
 
                 Log::info($params);
-                Log::info($aXml);
 
                 ini_set('default_socket_timeout', 180);
                 $info = $soapClient->RequestTransaction($params);
