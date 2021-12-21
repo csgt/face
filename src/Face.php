@@ -67,26 +67,27 @@ class Face
     ];
 
     private $empresa = [
-        'nombrecomercial'        => '',
-        'direccion'              => '',
-        'codigopostal'           => '',
-        'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
         'afiliacioniva'          => 'GEN', //FEL: [GEN, PEQ]
-        'retencioniva'           => false,
-        'codigoestablecimiento'  => 1,
-        'dispositivoelectronico' => '001',
-        'moneda'                 => 'GTQ',
-        'iva'                    => 12,
+        'codigoestablecimiento' => 1,
         'codigopais'             => 'GT',
-        'nit'                    => '',
-        'footer'                 => '',
-        'requestor'              => '',
-        'usuario'                => '',
+        'codigopostal'           => '',
+        'direccion'              => '',
+        'dispositivoelectronico' => '001',
+        'email'                  => 'email@email.com',
         'firmaalias'             => '',
         'firmallave'             => '',
+        'footer'                 => '',
         'formatos'               => 'XML',
-        'email'                  => 'email@email.com',
+        'iva'                    => 12,
+        'moneda'                 => 'GTQ',
+        'nit'                    => '',
+        'nombrecomercial'        => '',
+        'nombreestablecimiento'  => '',
+        'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
+        'requestor'             => '',
+        'retencioniva'           => false,
         'test'                   => false,
+        'usuario'                => '',
     ];
 
     private $reimpresion = [
@@ -343,7 +344,7 @@ class Face
         xmlwriter_text($xw, $this->empresa['nit']);
         xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'NombreComercial');
-        xmlwriter_text($xw, $this->empresa['nombrecomercial']);
+        xmlwriter_text($xw, $this->empresa['nombreestablecimiento']);
         xmlwriter_end_attribute($xw);
         xmlwriter_start_attribute($xw, 'AfiliacionIVA');
         xmlwriter_text($xw, $this->empresa['afiliacioniva']);
@@ -1036,14 +1037,16 @@ class Face
 
     public function setEmpresa($aParams)
     {
-        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva', 'codigopostal', 'email', 'firmaalias', 'firmallave'];
+        $validos = ['regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer', 'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'nombreestablecimiento', 'direccion', 'retencioniva', 'codigopostal', 'email', 'firmaalias', 'firmallave'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->empresa = array_merge($this->empresa, $aParams);
+        $this->empresa                          = array_merge($this->empresa, $aParams);
+        $this->empresa['nombreestablecimiento'] = preg_replace('/[\x00-\x1F\x7F]/u', '', $this->empresa['nombreestablecimiento']);
+        $this->empresa['nombreestablecimiento'] = strlen($this->empresa['nombreestablecimiento']) == 0 ? $this->empresa['nombrecomercial'] : $this->empresa['nombreestablecimiento'];
     }
 
     public function setFactura($aParams)
