@@ -29,7 +29,7 @@ class Face
                 'testnit'   => 'https://consultareceptores.feel.com.gt/rest/action',
                 'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
                 'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
-                'anulacion' => 'https://certificador.feel.com.gt/fel/anulacion/dte/',
+                'anulacion' => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
                 'pdf'       => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
             ],
             'guatefacturas' => [
@@ -52,7 +52,7 @@ class Face
         'fecharesolucion'        => '',
         'numeroautorizacion'     => '',
         'proveedorface'          => self::G4S, //g4s, infile, guatefacturas
-        'rangofinalautorizado'   => 0,
+        'rangofinalautorizado' => 0,
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
         'tipo'                   => 'FACE63',
@@ -62,7 +62,7 @@ class Face
     private $factura = [
         'direccion'         => '',
         'moneda'            => 'GTQ', //GTQ, USD
-        'nit'               => '',
+        'nit' => '',
         'nombre'            => '',
         'referenciainterna' => 0,
     ];
@@ -77,7 +77,7 @@ class Face
 
     private $empresa = [
         'afiliacioniva'          => 'GEN', //FEL: [GEN, PEQ]
-        'codigoestablecimiento'  => 1,
+        'codigoestablecimiento' => 1,
         'codigopais'             => 'GT',
         'codigopostal'           => '',
         'departamento'           => 'Guatemala',
@@ -95,7 +95,7 @@ class Face
         'nombrecomercial'        => '',
         'nombreestablecimiento'  => '',
         'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
-        'requestor'              => '',
+        'requestor'             => '',
         'retencioniva'           => false,
         'test'                   => false,
         'usuario'                => '',
@@ -997,7 +997,7 @@ class Face
 
                 try {
                     $xml = simplexml_load_string($result);
-                } catch (\Throwable $th) {
+                } catch (\Throwable$th) {
                     abort(400, json_encode($result));
                 }
 
