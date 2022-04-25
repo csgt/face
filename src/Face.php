@@ -23,14 +23,11 @@ class Face
                 'nit'     => 'http://fel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
             ],
             'infile'        => [
-                'testurl'   => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
-                'url'       => 'https://certificador.feel.com.gt/fel/certificacion/v2/dte',
-                'nit'       => 'https://consultareceptores.feel.com.gt/rest/action',
-                'testnit'   => 'https://consultareceptores.feel.com.gt/rest/action',
-                'signature' => 'https://signer-emisores.feel.com.gt/sign_solicitud_firmas/firma_xml',
-                'consulta'  => 'https://certificador.feel.com.gt/fel/consulta/dte/v2/identificador_unico',
-                'anulacion' => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
-                'pdf'       => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
+                'testurl' => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
+                'testnit' => 'https://consultareceptores.feel.com.gt/rest/action',
+                'url'     => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
+                'nit'     => 'https://consultareceptores.feel.com.gt/rest/action',
+                'pdf'     => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
             ],
             'guatefacturas' => [
                 'testurl'      => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
@@ -902,47 +899,20 @@ class Face
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
             case self::Infile:
-                //Firmar SAT
-                $client = new Client;
-                $body   = [
-                    'llave'        => $this->empresa['firmallave'],
-                    'archivo'      => $data2,
-                    'codigo'       => $this->factura['referenciainterna'],
-                    'alias'        => $this->empresa['firmaalias'],
-                    'es_anulacion' => ($accion == 'emitir' ? 'N' : 'S'),
-                ];
-                $response = $client->post($this->urls['fel'][self::Infile]['signature'], [
-                    'json' => $body,
-                ]);
-
-                $firma = json_decode((string) $response->getBody());
-                if ($firma->resultado == false) {
-                    abort(400, $firma->descripcion);
-                }
-
-                Log::info($firma->archivo);
-                //Certificar
                 $client  = new Client;
                 $headers = [
-                    'usuario'       => $username,
-                    'llave'         => $this->empresa['requestor'],
-                    'identificador' => $this->factura['referenciainterna'],
-                    'Content-Type'  => 'application/json',
+                    'UsuarioFirma'  => $username,
+                    'LlaveFirma'    => $this->empresa['firmallave'],
+                    'UsuarioApi'    => $username,
+                    'LlaveApi'      => $this->empresa['requestor'],
+                    'Identificador' => $this->factura['referenciainterna'],
                 ];
-                $body = [
-                    'nit_emisor' => $this->empresa['nit'],
-                    'xml_dte'    => $firma->archivo,
-                ];
+                $body = $aXml;
 
-                if ($accion == 'emitir') {
-                    $url = $this->getURL();
-                } else {
-                    $url = $this->urls['fel'][self::Infile]['anulacion'];
-                }
-
+                $url      = $this->getURL();
                 $response = $client->post($url, [
                     'headers' => $headers,
-                    'json'    => $body,
+                    'body'    => $body,
                 ]);
 
                 $json = json_decode((string) $response->getBody());
