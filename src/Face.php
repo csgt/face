@@ -906,6 +906,7 @@ class Face
                     'UsuarioApi'    => $username,
                     'LlaveApi'      => $this->empresa['requestor'],
                     'Identificador' => $this->factura['referenciainterna'],
+                    'Content-Type'  => 'text/xml; charset=UTF8',
                 ];
                 $body = $aXml;
 
