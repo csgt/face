@@ -97,6 +97,7 @@ class Face
         'test'                   => false,
         'usuario'                => '',
         'logo'                   => null,
+        'totalletras'            => '',
     ];
 
     private $reimpresion = [
@@ -691,17 +692,21 @@ class Face
         xmlwriter_end_element($xw); //DatosEmision
         xmlwriter_end_element($xw); //DTE
 
+        xmlwriter_start_element($xw, 'dte:Adenda'); //<Adenda>
+        xmlwriter_start_element($xw, 'dte:CamposAdicionales'); //<CamposAdicionales>
+
+        xmlwriter_start_element($xw, 'dte:TotalenLetras'); //<TotalenLetras>
+        xmlwriter_text($xw, $this->empresa['totalletras']);
+        xmlwriter_end_element($xw); //TotalenLetras
+
         if ($this->empresa['footer'] != '') {
-            xmlwriter_start_element($xw, 'dte:Adenda'); //<Adenda>
-            xmlwriter_start_element($xw, 'dte:CamposAdicionales'); //<CamposAdicionales>
             xmlwriter_start_element($xw, 'dte:PieDePagina'); //<PieDePagina>
-
             xmlwriter_text($xw, $this->empresa['footer']);
-
             xmlwriter_end_element($xw); //PieDePagina
-            xmlwriter_end_attribute($xw); //CamposAdicionales
-            xmlwriter_end_element($xw); //Adenda
         }
+
+        xmlwriter_end_attribute($xw); //CamposAdicionales
+        xmlwriter_end_element($xw); //Adenda
 
         xmlwriter_end_element($xw); //SAT
         xmlwriter_end_element($xw); //GTDocumento
@@ -1143,6 +1148,7 @@ class Face
             'regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer',
             'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva',
             'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento', 'departamento', 'municipio', 'logo',
+            'totalletras',
         ];
 
         foreach ($aParams as $key => $val) {
