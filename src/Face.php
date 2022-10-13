@@ -483,33 +483,31 @@ class Face
         xmlwriter_end_element($xw); //DireccionReceptor
         xmlwriter_end_element($xw); //</Receptor>
 
-        if ($this->resolucion['tipo'] != 'NCRE') {
-            xmlwriter_start_element($xw, 'dte:Frases'); //Frases
+        xmlwriter_start_element($xw, 'dte:Frases'); //Frases
 
-            //FRASE ISR
+        //FRASE ISR
+        xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
+        xmlwriter_start_attribute($xw, 'CodigoEscenario');
+        xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'TipoFrase');
+        xmlwriter_text($xw, '1');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_end_element($xw); //</Frase>
+
+        //FRASE IVA
+        if ($this->empresa['retencioniva']) {
             xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
             xmlwriter_start_attribute($xw, 'CodigoEscenario');
-            xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
+            xmlwriter_text($xw, 1);
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'TipoFrase');
-            xmlwriter_text($xw, '1');
+            xmlwriter_text($xw, '2');
             xmlwriter_end_attribute($xw);
             xmlwriter_end_element($xw); //</Frase>
-
-            //FRASE IVA
-            if ($this->empresa['retencioniva']) {
-                xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
-                xmlwriter_start_attribute($xw, 'CodigoEscenario');
-                xmlwriter_text($xw, 1);
-                xmlwriter_end_attribute($xw);
-                xmlwriter_start_attribute($xw, 'TipoFrase');
-                xmlwriter_text($xw, '2');
-                xmlwriter_end_attribute($xw);
-                xmlwriter_end_element($xw); //</Frase>
-            }
-
-            xmlwriter_end_element($xw); //Frases
         }
+
+        xmlwriter_end_element($xw); //Frases
 
         xmlwriter_start_element($xw, 'dte:Items'); //Items
         $i          = 1;
