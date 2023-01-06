@@ -136,6 +136,7 @@ class Face
                 'nit'       => $nit,
                 'nombre'    => '',
                 'direccion' => null,
+                'tipo'      => $type,
             ];
         }
 
@@ -174,6 +175,7 @@ class Face
                     'nit'       => $response->NIT,
                     'nombre'    => $nombre,
                     'direccion' => null,
+                    'tipo'      => $type,
                 ];
                 break;
             case self::Infile:
@@ -199,6 +201,7 @@ class Face
                     'nit'       => $json->nit,
                     'nombre'    => html_entity_decode($json->nombre),
                     'direccion' => null,
+                    'tipo'      => $type,
                 ];
                 break;
 
