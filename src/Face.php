@@ -1272,7 +1272,7 @@ class Face
 
     public function setFactura($aParams)
     {
-        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal', 'moneda'];
+        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal', 'moneda', 'tipo'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
