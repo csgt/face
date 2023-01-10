@@ -131,11 +131,11 @@ class Face
     public function buscarDocumento($tipo, $numero)
     {
         switch ($tipo) {
-            case 'nit':
+            case 'NIT':
                 return $this->buscarNit($numero);
                 break;
 
-            case 'cui':
+            case 'CUI':
                 return $this->buscarCui($numero);
                 break;
 
