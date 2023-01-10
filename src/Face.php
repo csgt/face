@@ -139,6 +139,14 @@ class Face
                 return $this->buscarCui($numero);
                 break;
 
+            case 'EXT':
+                return [
+                    'nit'       => $numero,
+                    'nombre'    => "",
+                    'direccion' => null,
+                ];
+                break;
+
             default:
                 abort(400, 'Tipo de documento invalido');
                 break;
