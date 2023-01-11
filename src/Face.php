@@ -258,7 +258,7 @@ class Face
         preg_match('/^[0-9]{4}\s?[0-9]{5}\s?[0-9]{4}$/', $cui, $matches);
 
         if (empty($matches)) {
-            abort(404, "CUI no valido");
+            abort(404, "DPI no valido");
         }
 
         $cui         = str_replace(' ', '', $cui);
@@ -268,15 +268,15 @@ class Face
         $verificador = (int) substr($cui, 8, 1);
 
         if ($depto === 0 || $muni === 0) {
-            abort(404, "CUI no valido");
+            abort(404, "DPI no valido");
         }
 
         if ($depto > count($munisPorDepto)) {
-            abort(404, "CUI no valido");
+            abort(404, "DPI no valido");
         }
 
         if ($muni > $munisPorDepto[$depto - 1]) {
-            abort(404, "CUI no valido");
+            abort(404, "DPI no valido");
         }
 
         $total = 0;
@@ -286,7 +286,7 @@ class Face
         $modulo = ($total % 11);
 
         if ($modulo != $verificador) {
-            abort(404, "CUI no valido");
+            abort(404, "DPI no valido");
         }
 
         return [
