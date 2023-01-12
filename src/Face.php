@@ -242,15 +242,16 @@ class Face
                 }
 
                 $params = [
+                    'Data1'     => 'CONSULTA_CUI',
                     'Data2'     => $cui,
                     'Entity'    => $this->fixnit($this->empresa['nit']),
                     'Requestor' => $this->empresa['requestor'],
                 ];
 
-                $soap = new SoapClient($this->urls['fel'][self::G4S]['nit']);
+                $soap = new SoapClient($this->urls['fel'][self::G4S]['url']);
 
-                $response = $soap->getCui($params);
-                $response = $response->getCUIResult->Response;
+                $response = $soap->RequestTransaction($params);
+                $response = $response->getRequestTransactionResponse->Response;
                 if (!$response->Result) {
                     abort(404, "CUI no encontrado");
                 }
