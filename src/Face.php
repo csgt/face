@@ -230,70 +230,121 @@ class Face
 
     public function buscarCui($cui)
     {
-        $munisPorDepto = [
-            /* 01 - Guatemala tiene:      */17/* municipios. */,
-            /* 02 - El Progreso tiene:    */8/* municipios. */,
-            /* 03 - Sacatepéquez tiene:   */16/* municipios. */,
-            /* 04 - Chimaltenango tiene:  */16/* municipios. */,
-            /* 05 - Escuintla tiene:      */13/* municipios. */,
-            /* 06 - Santa Rosa tiene:     */14/* municipios. */,
-            /* 07 - Sololá tiene:         */19/* municipios. */,
-            /* 08 - Totonicapán tiene:    */8/* municipios. */,
-            /* 09 - Quetzaltenango tiene: */24/* municipios. */,
-            /* 10 - Suchitepéquez tiene:  */21/* municipios. */,
-            /* 11 - Retalhuleu tiene:     */9/* municipios. */,
-            /* 12 - San Marcos tiene:     */30/* municipios. */,
-            /* 13 - Huehuetenango tiene:  */32/* municipios. */,
-            /* 14 - Quiché tiene:         */21/* municipios. */,
-            /* 15 - Baja Verapaz tiene:   */8/* municipios. */,
-            /* 16 - Alta Verapaz tiene:   */17/* municipios. */,
-            /* 17 - Petén tiene:          */14/* municipios. */,
-            /* 18 - Izabal tiene:         */5/* municipios. */,
-            /* 19 - Zacapa tiene:         */11/* municipios. */,
-            /* 20 - Chiquimula tiene:     */11/* municipios. */,
-            /* 21 - Jalapa tiene:         */7/* municipios. */,
-            /* 22 - Jutiapa tiene:        */17, /* municipios. */
-        ];
-
-        preg_match('/^[0-9]{4}\s?[0-9]{5}\s?[0-9]{4}$/', $cui, $matches);
-
-        if (empty($matches)) {
-            abort(404, "DPI no valido");
+        $arr = [];
+        if ($this->empresa['requestor'] == '') {
+            abort(400, 'El requestor es requerido');
         }
 
-        $cui         = str_replace(' ', '', $cui);
-        $depto       = (int) substr($cui, 9, 2);
-        $muni        = (int) substr($cui, 11, 2);
-        $numero      = substr($cui, 0, 8);
-        $verificador = (int) substr($cui, 8, 1);
+        switch ($this->resolucion['proveedorface']) {
+            case self::G4S:
+                if ($this->empresa['nit'] == '') {
+                    abort(422, 'El NIT de la empresa emisora es requerido');
+                }
 
-        if ($depto === 0 || $muni === 0) {
-            abort(404, "DPI no valido");
+                $params = [
+                    'Data2'     => $cui,
+                    'Entity'    => $this->fixnit($this->empresa['nit']),
+                    'Requestor' => $this->empresa['requestor'],
+                ];
+
+                $soap = new SoapClient($this->urls['fel'][self::G4S]['nit']);
+
+                $response = $soap->getCui($params);
+                $response = $response->getCUIResult->Response;
+                if (!$response->Result) {
+                    abort(404, "CUI no encontrado");
+                }
+
+                $nombre = html_entity_decode($response->nombre);
+                $nombre = str_replace(',,', '|', $nombre);
+                $nombre = str_replace(',', ' ', $nombre);
+                $arr    = explode('|', $nombre);
+                if (sizeof($arr) == 2) {
+                    $nombre = $arr[1] . ", " . $arr[0];
+                } else {
+                    $nombre = str_replace('|', ',', $nombre);
+                }
+
+                $arr = [
+                    'nit'       => $response->CUI,
+                    'nombre'    => $nombre,
+                    'direccion' => null,
+                ];
+                break;
+
+            case self::Infile:
+                $munisPorDepto = [
+                    /* 01 - Guatemala tiene:      */17/* municipios. */,
+                    /* 02 - El Progreso tiene:    */8/* municipios. */,
+                    /* 03 - Sacatepéquez tiene:   */16/* municipios. */,
+                    /* 04 - Chimaltenango tiene:  */16/* municipios. */,
+                    /* 05 - Escuintla tiene:      */13/* municipios. */,
+                    /* 06 - Santa Rosa tiene:     */14/* municipios. */,
+                    /* 07 - Sololá tiene:         */19/* municipios. */,
+                    /* 08 - Totonicapán tiene:    */8/* municipios. */,
+                    /* 09 - Quetzaltenango tiene: */24/* municipios. */,
+                    /* 10 - Suchitepéquez tiene:  */21/* municipios. */,
+                    /* 11 - Retalhuleu tiene:     */9/* municipios. */,
+                    /* 12 - San Marcos tiene:     */30/* municipios. */,
+                    /* 13 - Huehuetenango tiene:  */32/* municipios. */,
+                    /* 14 - Quiché tiene:         */21/* municipios. */,
+                    /* 15 - Baja Verapaz tiene:   */8/* municipios. */,
+                    /* 16 - Alta Verapaz tiene:   */17/* municipios. */,
+                    /* 17 - Petén tiene:          */14/* municipios. */,
+                    /* 18 - Izabal tiene:         */5/* municipios. */,
+                    /* 19 - Zacapa tiene:         */11/* municipios. */,
+                    /* 20 - Chiquimula tiene:     */11/* municipios. */,
+                    /* 21 - Jalapa tiene:         */7/* municipios. */,
+                    /* 22 - Jutiapa tiene:        */17, /* municipios. */
+                ];
+
+                preg_match('/^[0-9]{4}\s?[0-9]{5}\s?[0-9]{4}$/', $cui, $matches);
+
+                if (empty($matches)) {
+                    abort(404, "DPI no valido");
+                }
+
+                $cui         = str_replace(' ', '', $cui);
+                $depto       = (int) substr($cui, 9, 2);
+                $muni        = (int) substr($cui, 11, 2);
+                $numero      = substr($cui, 0, 8);
+                $verificador = (int) substr($cui, 8, 1);
+
+                if ($depto === 0 || $muni === 0) {
+                    abort(404, "DPI no valido");
+                }
+
+                if ($depto > count($munisPorDepto)) {
+                    abort(404, "DPI no valido");
+                }
+
+                if ($muni > $munisPorDepto[$depto - 1]) {
+                    abort(404, "DPI no valido");
+                }
+
+                $total = 0;
+                for ($i = 0; $i < strlen($numero); $i++) {
+                    $total += $numero[$i] * ($i + 2);
+                }
+                $modulo = ($total % 11);
+
+                if ($modulo != $verificador) {
+                    abort(404, "DPI no valido");
+                }
+
+                return [
+                    'nit'       => $cui,
+                    'nombre'    => "",
+                    'direccion' => null,
+                ];
+                break;
+
+            default:
+                abort(422, 'El proveedor es incorrecto');
+                break;
         }
 
-        if ($depto > count($munisPorDepto)) {
-            abort(404, "DPI no valido");
-        }
-
-        if ($muni > $munisPorDepto[$depto - 1]) {
-            abort(404, "DPI no valido");
-        }
-
-        $total = 0;
-        for ($i = 0; $i < strlen($numero); $i++) {
-            $total += $numero[$i] * ($i + 2);
-        }
-        $modulo = ($total % 11);
-
-        if ($modulo != $verificador) {
-            abort(404, "DPI no valido");
-        }
-
-        return [
-            'nit'       => $cui,
-            'nombre'    => "",
-            'direccion' => null,
-        ];
+        return $arr;
     }
 
     public function generar()
