@@ -242,33 +242,35 @@ class Face
                 }
 
                 $params = [
-                    'Data1'     => 'CONSULTA_CUI',
-                    'Data2'     => $cui,
-                    'Entity'    => $this->fixnit($this->empresa['nit']),
-                    'Requestor' => $this->empresa['requestor'],
+                    'Requestor'   => $this->empresa['requestor'],
+                    'Transaction' => 'SYSTEM_REQUEST',
+                    'Country'     => $this->empresa['codigopais'],
+                    'Entity'      => $this->fixnit($this->empresa['nit'], true),
+                    'User'        => $this->empresa['requestor'],
+                    'UserName'    => $this->empresa['usuario'],
+                    'Data1'       => 'CONSULTA_CUI',
+                    'Data2'       => $cui,
+                    'Data3'       => "",
                 ];
 
-                $soap = new SoapClient($this->urls['fel'][self::G4S]['url']);
-
+                $soap     = new SoapClient($this->urls['fel'][self::G4S]['url']);
                 $response = $soap->RequestTransaction($params);
-                $response = $response->getRequestTransactionResponse->Response;
-                if (!$response->Result) {
-                    abort(404, "CUI no encontrado");
+                $result   = $response->RequestTransactionResult;
+
+                if ($result->Response->Result == false) {
+                    abort(404, 'DPI Inválido');
+
+                    return;
                 }
 
-                $nombre = html_entity_decode($response->nombre);
-                $nombre = str_replace(',,', '|', $nombre);
-                $nombre = str_replace(',', ' ', $nombre);
-                $arr    = explode('|', $nombre);
-                if (sizeof($arr) == 2) {
-                    $nombre = $arr[1] . ", " . $arr[0];
-                } else {
-                    $nombre = str_replace('|', ',', $nombre);
+                $data = json_decode($result->ResponseData->ResponseData1);
+                if ($data->fallecido) {
+                    abort(404, 'DPI Inválido');
                 }
 
-                $arr = [
-                    'nit'       => $response->CUI,
-                    'nombre'    => $nombre,
+                return [
+                    'nit'       => $data->CUI,
+                    'nombre'    => $data->nombre,
                     'direccion' => null,
                 ];
                 break;
