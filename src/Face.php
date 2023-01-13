@@ -450,13 +450,6 @@ class Face
         xmlwriter_text($xw, 'DatosAnulacion');
         xmlwriter_end_attribute($xw);
 
-        $type = $this->anulacion['tipo'];
-        if ($type != 'NIT') {
-            xmlwriter_start_attribute($xw, 'TipoEspecial');
-            xmlwriter_text($xw, $type);
-            xmlwriter_end_attribute($xw);
-        }
-
         xmlwriter_start_attribute($xw, 'IDReceptor');
         xmlwriter_text($xw, $this->anulacion['nit']);
         xmlwriter_end_attribute($xw);
