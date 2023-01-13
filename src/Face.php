@@ -157,6 +157,10 @@ class Face
     {
         $nit = $this->fixnit($nit);
 
+        if (strlen($nit) <= 0) {
+            abort(404, 'NIT no encontrado');
+        }
+
         $arr = [];
         if ($this->empresa['requestor'] == '') {
             abort(400, 'El requestor es requerido');
