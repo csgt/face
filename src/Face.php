@@ -6,6 +6,9 @@ use SoapClient;
 use DOMDocument;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
+use Csgt\Face\FormatoEmisor;
+use SoftlogicGT\ValidationRulesGT\Rules\Dpi;
+use SoftlogicGT\ValidationRulesGT\Rules\Nit;
 
 class Face
 {
@@ -53,7 +56,6 @@ class Face
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
         'tipo'                   => 'FACE63',
-        'formato'                => 'FormatoEmisor', //FormatoEmisor, FormatoTicket
     ];
 
     // monedas: GTQ, USD
@@ -129,7 +131,7 @@ class Face
         'SumaDeDescuentos' => 0,
     ];
 
-    public function buscarDocumento($tipo, $numero)
+    public function buscarID($tipo, $numero)
     {
         switch ($tipo) {
             case 'NIT':
@@ -149,14 +151,25 @@ class Face
                 break;
 
             default:
-                abort(400, 'Tipo de documento invalido');
+                abort(400, 'Tipo de documento inválido');
                 break;
         }
+    }
+
+    //Este es para backwards compatibility en SM
+    public function buscarDocumento($tipo, $numero)
+    {
+        return $this->buscarID($tipo, $numero);
     }
 
     public function buscarNit($nit)
     {
         $nit = $this->fixnit($nit);
+
+        $validator = new Nit($nit);
+        if (!$validator->passes('nit', $nit)) {
+            abort(400, 'NIT no válido');
+        }
 
         if (strlen($nit) <= 0) {
             abort(404, 'NIT no encontrado');
@@ -236,6 +249,12 @@ class Face
     public function buscarCui($cui)
     {
         $arr = [];
+
+        $validator = new Dpi($cui);
+        if (!$validator->passes('dpi', $cui)) {
+            abort(400, 'CUI no válido');
+        }
+
         if ($this->empresa['requestor'] == '') {
             abort(400, 'El requestor es requerido');
         }
@@ -281,65 +300,6 @@ class Face
                 break;
 
             case self::Infile:
-                $munisPorDepto = [
-                    /* 01 - Guatemala tiene:      */17/* municipios. */,
-                    /* 02 - El Progreso tiene:    */8/* municipios. */,
-                    /* 03 - Sacatepéquez tiene:   */16/* municipios. */,
-                    /* 04 - Chimaltenango tiene:  */16/* municipios. */,
-                    /* 05 - Escuintla tiene:      */13/* municipios. */,
-                    /* 06 - Santa Rosa tiene:     */14/* municipios. */,
-                    /* 07 - Sololá tiene:         */19/* municipios. */,
-                    /* 08 - Totonicapán tiene:    */8/* municipios. */,
-                    /* 09 - Quetzaltenango tiene: */24/* municipios. */,
-                    /* 10 - Suchitepéquez tiene:  */21/* municipios. */,
-                    /* 11 - Retalhuleu tiene:     */9/* municipios. */,
-                    /* 12 - San Marcos tiene:     */30/* municipios. */,
-                    /* 13 - Huehuetenango tiene:  */32/* municipios. */,
-                    /* 14 - Quiché tiene:         */21/* municipios. */,
-                    /* 15 - Baja Verapaz tiene:   */8/* municipios. */,
-                    /* 16 - Alta Verapaz tiene:   */17/* municipios. */,
-                    /* 17 - Petén tiene:          */14/* municipios. */,
-                    /* 18 - Izabal tiene:         */5/* municipios. */,
-                    /* 19 - Zacapa tiene:         */11/* municipios. */,
-                    /* 20 - Chiquimula tiene:     */11/* municipios. */,
-                    /* 21 - Jalapa tiene:         */7/* municipios. */,
-                    /* 22 - Jutiapa tiene:        */17, /* municipios. */
-                ];
-
-                preg_match('/^[0-9]{4}\s?[0-9]{5}\s?[0-9]{4}$/', $cui, $matches);
-
-                if (empty($matches)) {
-                    abort(404, "DPI no valido");
-                }
-
-                $cui         = str_replace(' ', '', $cui);
-                $depto       = (int) substr($cui, 9, 2);
-                $muni        = (int) substr($cui, 11, 2);
-                $numero      = substr($cui, 0, 8);
-                $verificador = (int) substr($cui, 8, 1);
-
-                if ($depto === 0 || $muni === 0) {
-                    abort(404, "DPI no valido");
-                }
-
-                if ($depto > count($munisPorDepto)) {
-                    abort(404, "DPI no valido");
-                }
-
-                if ($muni > $munisPorDepto[$depto - 1]) {
-                    abort(404, "DPI no valido");
-                }
-
-                $total = 0;
-                for ($i = 0; $i < strlen($numero); $i++) {
-                    $total += $numero[$i] * ($i + 2);
-                }
-                $modulo = ($total % 11);
-
-                if ($modulo != $verificador) {
-                    abort(404, "DPI no valido");
-                }
-
                 return [
                     'nit'       => $cui,
                     'nombre'    => "",
@@ -1235,8 +1195,7 @@ class Face
             'descuentos'  => $this->descuentos,
         ];
 
-        $class    = '\Csgt\Face\\' . $this->resolucion['formato'];
-        $formato  = new $class;
+        $formato  = new FormatoEmisor;
         $response = $formato::generar($params);
 
         return $response;
@@ -1300,10 +1259,6 @@ class Face
             $this->tipo = 'fel';
         } else {
             abort(400, 'El tipo de documento es desconocido');
-        }
-
-        if (!in_array($this->resolucion['formato'], ['FormatoEmisor', 'FormatoTicket'])) {
-            abort(400, 'El formato es desconocido');
         }
     }
 
