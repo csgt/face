@@ -1,30 +1,29 @@
-<?php namespace Csgt\Face;
+<?php
+namespace Csgt\Face;
 
-use Illuminate\Support\ServiceProvider;
-use Illuminate\Foundation\AliasLoader;
 use Illuminate\Routing\Router;
+use Illuminate\Foundation\AliasLoader;
+use Illuminate\Support\ServiceProvider;
 
-class FaceServiceProvider extends ServiceProvider {
+class FaceServiceProvider extends ServiceProvider
+{
 
-	protected $defer = false;
+    protected $defer = false;
 
-	public function boot(Router $router) {
-		$this->mergeConfigFrom(__DIR__ . '/config/csgtface.php', 'csgtface');
+    public function boot(Router $router)
+    {
+        AliasLoader::getInstance()->alias('Face', 'Csgt\Face\Face');
+    }
 
-		AliasLoader::getInstance()->alias('Face','Csgt\Face\Face');
+    public function register()
+    {
+        $this->app->singleton('face', function ($app) {
+            return new Face;
+        });
+    }
 
-		$this->publishes([
-      __DIR__.'/config/csgtface.php' => config_path('csgtface.php'),
-    ], 'config');
-	}
-
-	public function register() {
-		$this->app->singleton('face', function($app) {
-    	return new Face;
-  	});
-	}
-
-	public function provides() {
-		return ['face'];
-	}
+    public function provides()
+    {
+        return ['face'];
+    }
 }
