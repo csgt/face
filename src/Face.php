@@ -6,6 +6,9 @@ use SoapClient;
 use DOMDocument;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
+use Csgt\Face\FormatoEmisor;
+use SoftlogicGT\ValidationRulesGT\Rules\Dpi;
+use SoftlogicGT\ValidationRulesGT\Rules\Nit;
 
 class Face
 {
@@ -53,16 +56,16 @@ class Face
         'rangoinicialautorizado' => 0,
         'serie'                  => '',
         'tipo'                   => 'FACE63',
-        'formato'                => 'FormatoEmisor', //FormatoEmisor, FormatoTicket
     ];
 
     // monedas: GTQ, USD
-    // tipos: nit, dpi, pasaporte
+    // tipos: NIT, CUI, EXT
     private $factura = [
         'direccion'         => '',
         'moneda'            => 'GTQ',
         'nit'               => '',
         'nombre'            => '',
+        'tipo'              => 'NIT',
         'referenciainterna' => 0,
     ];
 
@@ -117,6 +120,7 @@ class Face
         'fecha'        => '',
         'autorizacion' => '',
         'nit'          => '',
+        'tipo'         => 'NIT',
         'uid'          => '',
     ];
 
@@ -127,17 +131,48 @@ class Face
         'SumaDeDescuentos' => 0,
     ];
 
+    public function buscarID($tipo, $numero)
+    {
+        switch ($tipo) {
+            case 'NIT':
+                return $this->buscarNit($numero);
+                break;
+
+            case 'CUI':
+                return $this->buscarCui($numero);
+                break;
+
+            case 'EXT':
+                return [
+                    'nit'       => $numero,
+                    'nombre'    => "",
+                    'direccion' => null,
+                ];
+                break;
+
+            default:
+                abort(400, 'Tipo de documento inválido');
+                break;
+        }
+    }
+
+    //Este es para backwards compatibility en SM
+    public function buscarDocumento($tipo, $numero)
+    {
+        return $this->buscarID($tipo, $numero);
+    }
+
     public function buscarNit($nit)
     {
-        $nit  = $this->fixnit($nit);
-        $type = $this->documentType($nit);
-        if ($type == 'cui') {
-            return [
-                'nit'       => $nit,
-                'nombre'    => '',
-                'direccion' => null,
-                'tipo'      => $type,
-            ];
+        $nit = $this->fixnit($nit);
+
+        $validator = new Nit($nit);
+        if (!$validator->passes('nit', $nit)) {
+            abort(400, 'NIT no válido');
+        }
+
+        if (strlen($nit) <= 0) {
+            abort(404, 'NIT no encontrado');
         }
 
         $arr = [];
@@ -175,7 +210,6 @@ class Face
                     'nit'       => $response->NIT,
                     'nombre'    => $nombre,
                     'direccion' => null,
-                    'tipo'      => $type,
                 ];
                 break;
             case self::Infile:
@@ -201,7 +235,75 @@ class Face
                     'nit'       => $json->nit,
                     'nombre'    => html_entity_decode($json->nombre),
                     'direccion' => null,
-                    'tipo'      => $type,
+                ];
+                break;
+
+            default:
+                abort(422, 'El proveedor es incorrecto');
+                break;
+        }
+
+        return $arr;
+    }
+
+    public function buscarCui($cui)
+    {
+        $arr = [];
+
+        $validator = new Dpi($cui);
+        if (!$validator->passes('dpi', $cui)) {
+            abort(400, 'CUI no válido');
+        }
+
+        if ($this->empresa['requestor'] == '') {
+            abort(400, 'El requestor es requerido');
+        }
+
+        switch ($this->resolucion['proveedorface']) {
+            case self::G4S:
+                if ($this->empresa['nit'] == '') {
+                    abort(422, 'El NIT de la empresa emisora es requerido');
+                }
+
+                $params = [
+                    'Requestor'   => $this->empresa['requestor'],
+                    'Transaction' => 'SYSTEM_REQUEST',
+                    'Country'     => $this->empresa['codigopais'],
+                    'Entity'      => $this->fixnit($this->empresa['nit'], true),
+                    'User'        => $this->empresa['requestor'],
+                    'UserName'    => $this->empresa['usuario'],
+                    'Data1'       => 'CONSULTA_CUI',
+                    'Data2'       => $cui,
+                    'Data3'       => "",
+                ];
+
+                $soap     = new SoapClient($this->urls['fel'][self::G4S]['url']);
+                $response = $soap->RequestTransaction($params);
+                $result   = $response->RequestTransactionResult;
+
+                if ($result->Response->Result == false) {
+                    abort(404, 'DPI Inválido');
+
+                    return;
+                }
+
+                $data = json_decode($result->ResponseData->ResponseData1);
+                if ($data->fallecido) {
+                    abort(404, 'DPI Inválido');
+                }
+
+                return [
+                    'nit'       => $data->CUI,
+                    'nombre'    => $data->nombre,
+                    'direccion' => null,
+                ];
+                break;
+
+            case self::Infile:
+                return [
+                    'nit'       => $cui,
+                    'nombre'    => "",
+                    'direccion' => null,
                 ];
                 break;
 
@@ -332,71 +434,6 @@ class Face
 
         return $this->sendXML(xmlwriter_output_memory($xw), 'fel', 'anular');
         //echo xmlwriter_output_memory($xw);
-    }
-
-    public function documentType($number)
-    {
-        $type          = 'nit';
-        $munisPorDepto = [
-            /* 01 - Guatemala tiene:      */17/* municipios. */,
-            /* 02 - El Progreso tiene:    */8/* municipios. */,
-            /* 03 - Sacatepéquez tiene:   */16/* municipios. */,
-            /* 04 - Chimaltenango tiene:  */16/* municipios. */,
-            /* 05 - Escuintla tiene:      */13/* municipios. */,
-            /* 06 - Santa Rosa tiene:     */14/* municipios. */,
-            /* 07 - Sololá tiene:         */19/* municipios. */,
-            /* 08 - Totonicapán tiene:    */8/* municipios. */,
-            /* 09 - Quetzaltenango tiene: */24/* municipios. */,
-            /* 10 - Suchitepéquez tiene:  */21/* municipios. */,
-            /* 11 - Retalhuleu tiene:     */9/* municipios. */,
-            /* 12 - San Marcos tiene:     */30/* municipios. */,
-            /* 13 - Huehuetenango tiene:  */32/* municipios. */,
-            /* 14 - Quiché tiene:         */21/* municipios. */,
-            /* 15 - Baja Verapaz tiene:   */8/* municipios. */,
-            /* 16 - Alta Verapaz tiene:   */17/* municipios. */,
-            /* 17 - Petén tiene:          */14/* municipios. */,
-            /* 18 - Izabal tiene:         */5/* municipios. */,
-            /* 19 - Zacapa tiene:         */11/* municipios. */,
-            /* 20 - Chiquimula tiene:     */11/* municipios. */,
-            /* 21 - Jalapa tiene:         */7/* municipios. */,
-            /* 22 - Jutiapa tiene:        */17, /* municipios. */
-        ];
-
-        preg_match('/^[0-9]{4}\s?[0-9]{5}\s?[0-9]{4}$/', $number, $matches);
-
-        if (empty($matches)) {
-            return $type;
-        }
-
-        $cui         = str_replace(' ', '', $number);
-        $depto       = (int) substr($cui, 9, 2);
-        $muni        = (int) substr($cui, 11, 2);
-        $numero      = substr($cui, 0, 8);
-        $verificador = (int) substr($cui, 8, 1);
-
-        if ($depto === 0 || $muni === 0) {
-            return $type;
-        }
-
-        if ($depto > count($munisPorDepto)) {
-            return $type;
-        }
-
-        if ($muni > $munisPorDepto[$depto - 1]) {
-            return $type;
-        }
-
-        $total = 0;
-        for ($i = 0; $i < strlen($numero); $i++) {
-            $total += $numero[$i] * ($i + 2);
-        }
-        $modulo = ($total % 11);
-
-        if ($modulo == $verificador) {
-            $type = 'cui';
-        }
-
-        return $type;
     }
 
     public function fel()
@@ -534,9 +571,10 @@ class Face
 
         xmlwriter_start_element($xw, 'dte:Receptor'); //<Receptor>
 
-        if ($this->documentType($this->factura['nit']) == 'cui') {
+        $type = $this->factura['tipo'];
+        if ($type != 'NIT') {
             xmlwriter_start_attribute($xw, 'TipoEspecial');
-            xmlwriter_text($xw, 'CUI');
+            xmlwriter_text($xw, $type);
             xmlwriter_end_attribute($xw);
         }
 
@@ -570,33 +608,33 @@ class Face
         xmlwriter_end_element($xw); //DireccionReceptor
         xmlwriter_end_element($xw); //</Receptor>
 
-        if ($this->resolucion['tipo'] != 'NCRE') {
-            xmlwriter_start_element($xw, 'dte:Frases'); //Frases
+        // if ($this->resolucion['tipo'] != 'NCRE') {
+        xmlwriter_start_element($xw, 'dte:Frases'); //Frases
 
-            //FRASE ISR
+        //FRASE ISR
+        xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
+        xmlwriter_start_attribute($xw, 'CodigoEscenario');
+        xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
+        xmlwriter_end_attribute($xw);
+        xmlwriter_start_attribute($xw, 'TipoFrase');
+        xmlwriter_text($xw, '1');
+        xmlwriter_end_attribute($xw);
+        xmlwriter_end_element($xw); //</Frase>
+
+        //FRASE IVA
+        if ($this->empresa['retencioniva']) {
             xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
             xmlwriter_start_attribute($xw, 'CodigoEscenario');
-            xmlwriter_text($xw, $this->empresa['regimen'] == 'PAGO_TRIMESTRAL' ? 1 : 2);
+            xmlwriter_text($xw, 1);
             xmlwriter_end_attribute($xw);
             xmlwriter_start_attribute($xw, 'TipoFrase');
-            xmlwriter_text($xw, '1');
+            xmlwriter_text($xw, '2');
             xmlwriter_end_attribute($xw);
             xmlwriter_end_element($xw); //</Frase>
-
-            //FRASE IVA
-            if ($this->empresa['retencioniva']) {
-                xmlwriter_start_element($xw, 'dte:Frase'); //<Frase>
-                xmlwriter_start_attribute($xw, 'CodigoEscenario');
-                xmlwriter_text($xw, 1);
-                xmlwriter_end_attribute($xw);
-                xmlwriter_start_attribute($xw, 'TipoFrase');
-                xmlwriter_text($xw, '2');
-                xmlwriter_end_attribute($xw);
-                xmlwriter_end_element($xw); //</Frase>
-            }
-
-            xmlwriter_end_element($xw); //Frases
         }
+
+        xmlwriter_end_element($xw); //Frases
+        // }
 
         xmlwriter_start_element($xw, 'dte:Items'); //Items
         $i          = 1;
@@ -1157,8 +1195,7 @@ class Face
             'descuentos'  => $this->descuentos,
         ];
 
-        $class    = '\Csgt\Face\\' . $this->resolucion['formato'];
-        $formato  = new $class;
+        $formato  = new FormatoEmisor;
         $response = $formato::generar($params);
 
         return $response;
@@ -1223,10 +1260,6 @@ class Face
         } else {
             abort(400, 'El tipo de documento es desconocido');
         }
-
-        if (!in_array($this->resolucion['formato'], ['FormatoEmisor', 'FormatoTicket'])) {
-            abort(400, 'El formato es desconocido');
-        }
     }
 
     public function setEmpresa($aParams)
@@ -1253,7 +1286,7 @@ class Face
 
     public function setFactura($aParams)
     {
-        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal', 'moneda'];
+        $validos = ['referenciainterna', 'nit', 'nombre', 'direccion', 'descuentoGlobal', 'moneda', 'tipo'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
