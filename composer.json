@@ -9,9 +9,7 @@
     ],
     "require": {
         "php": ">=7.0.0",
-        "ext-soap": "*"
-    },
-    "require-dev": {
+        "ext-soap": "*",
         "softlogic-gt/laravel-validation-rules-gt": "^1.0"
     },
     "autoload": {
