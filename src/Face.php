@@ -878,7 +878,7 @@ class Face
         return $respuesta;
     }
 
-    public function consultar()
+    public function consultar($retry = 0)
     {
         $xml = '';
         $pdf = '';
@@ -915,8 +915,17 @@ class Face
                 $result = $info->RequestTransactionResult;
 
                 if ($result->Response->Result == false) {
-                    throw new Exception($result->Response->Description);
+                    $message = $result->Response->Description;
+                    \Log::error("Hubo un error al generar la factura G4S: " . $message . ", retrying..." . $retry);
+                    if ($retry < 3 && (str_contains($message, 'Could not find file') || str_contains($message, 'no ha sido emitido'))) {
+                        sleep(3 + ($retry * 2));
+                        $retry = $retry + 1;
+
+                        return $this->consultar($retry);
+                    }
+                    throw new Exception($message);
                 }
+
                 $xml = base64_decode($result->ResponseData->ResponseData1);
                 $pdf = $result->ResponseData->ResponseData3;
                 break;
