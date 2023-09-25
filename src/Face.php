@@ -1026,6 +1026,19 @@ class Face
         $data3       = $this->factura['referenciainterna'];
         $username    = $this->empresa['usuario'];
 
+        $respuesta = [
+            'id'        => null,
+            'uuid'      => null,
+            'serie'     => null,
+            'documento' => null,
+            'firma'     => null,
+            'nombre'    => null,
+            'direccion' => null,
+            'xml'       => null,
+            'html'      => null,
+            'pdf'       => null,
+        ];
+
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
             case self::Infile:
@@ -1098,7 +1111,7 @@ class Face
 
                 try {
                     $xml = simplexml_load_string($result);
-                } catch (\Throwable$th) {
+                } catch (\Throwable $th) {
                     abort(400, json_encode($result));
                 }
 
@@ -1140,19 +1153,23 @@ class Face
 
                 $result = $info->RequestTransactionResult;
 
-                if ($result->Response->Result == false) {
+                if ($result->Response->Result == false && $result->Response->Code != 9) {
                     abort(400, $result->Response->Description);
-
-                    return;
                 }
 
-                $uuid   = $result->Response->Identifier->DocumentGUID;
-                $xml    = $result->ResponseData->ResponseData1;
+                // Cuando el documento ya ha sido anulado
+                if ($result->Response->Code == 9) {
+                    return $respuesta;
+                }
+
+                $uuid = optional(optional($result->Response)->Identifier)->DocumentGUID;
+                $xml  = optional($result->ResponseData)->ResponseData1;
+
                 $xmlDoc = new DOMDocument();
                 $xmlDoc->loadXML(base64_decode($xml));
 
-                $serie     = $result->Response->Identifier->Batch;
-                $documento = $result->Response->Identifier->Serial;
+                $serie     = optional(optional($result->Response)->Identifier)->Batch;
+                $documento = optional(optional($result->Response)->Identifier)->Serial;
                 $firma     = $uuid;
                 $id        = null;
                 $nombre    = null;
