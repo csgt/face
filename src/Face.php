@@ -269,7 +269,7 @@ class Face
                     'Requestor'   => $this->empresa['requestor'],
                     'Transaction' => 'SYSTEM_REQUEST',
                     'Country'     => $this->empresa['codigopais'],
-                    'Entity'      => $this->fixnit($this->empresa['nit'], true),
+                    'Entity'      => $this->empresa['nit'],
                     'User'        => $this->empresa['requestor'],
                     'UserName'    => $this->empresa['usuario'],
                     'Data1'       => 'CONSULTA_CUI',
