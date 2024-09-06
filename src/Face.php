@@ -1330,7 +1330,7 @@ class Face
 
     public function setAnulacion($aParams)
     {
-        $validos = ['serie', 'correlativo', 'razon', 'autorizacion', 'fecha', 'uid', 'nit'];
+        $validos = ['serie', 'correlativo', 'razon', 'autorizacion', 'fecha', 'uid', 'nit', 'referenciainterna'];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
