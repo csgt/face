@@ -114,14 +114,15 @@ class Face
     ];
 
     private $anulacion = [
-        'serie'        => '',
-        'correlativo'  => '',
-        'razon'        => 'Anulación',
-        'fecha'        => '',
-        'autorizacion' => '',
-        'nit'          => '',
-        'tipo'         => 'NIT',
-        'uid'          => '',
+        'serie'             => '',
+        'correlativo'       => '',
+        'referenciainterna' => 0,
+        'razon'             => 'Anulación',
+        'fecha'             => '',
+        'autorizacion'      => '',
+        'nit'               => '',
+        'tipo'              => 'NIT',
+        'uid'               => '',
     ];
 
     private $items           = [];
@@ -1337,8 +1338,9 @@ class Face
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->anulacion        = array_merge($this->anulacion, $aParams);
-        $this->anulacion['nit'] = $this->fixnit($this->anulacion['nit']);
+        $this->anulacion                    = array_merge($this->anulacion, $aParams);
+        $this->factura['referenciainterna'] = $this->anulacion['referenciainterna'];
+        $this->anulacion['nit']             = $this->fixnit($this->anulacion['nit']);
     }
 
     public function setFormatos($aParams)
