@@ -29,6 +29,7 @@ class FormatoEmisor
         if ($result->Response->Result == false) {
             $message = $result->Response->Description;
             \Log::error("Hubo un error al generar la factura G4S: " . $message . ", retrying..." . $retry);
+            \Log::error($message);
             if ($retry < 3 && (str_contains($message, 'Could not find file') || str_contains($message, 'no ha sido emitido'))) {
                 sleep(3 + ($retry * 2));
                 $retry = $retry + 1;
