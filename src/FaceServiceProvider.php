@@ -1,4 +1,5 @@
 <?php
+
 namespace Csgt\Face;
 
 use Illuminate\Routing\Router;
@@ -7,7 +8,6 @@ use Illuminate\Support\ServiceProvider;
 
 class FaceServiceProvider extends ServiceProvider
 {
-
     protected $defer = false;
 
     public function boot(Router $router)
@@ -18,7 +18,7 @@ class FaceServiceProvider extends ServiceProvider
     public function register()
     {
         $this->app->singleton('face', function ($app) {
-            return new Face;
+            return new Face();
         });
     }
 

@@ -1,13 +1,15 @@
 <?php
+
 namespace Csgt\Face;
 
-use Exception;
 use SoapClient;
+use Log;
 use GuzzleHttp\Client;
+use Csgt\Face\Exceptions\FaceException;
 
 class FormatoEmisor
 {
-    private static function consultar_g4s($empresa, $reimpresion, $url, $nit, $retry = 0)
+    private static function consultarG4s($empresa, $reimpresion, $url, $nit, $retry = 0)
     {
         $username                     = $empresa['usuario'];
         $soapClient                   = new SoapClient($url, ['trace' => true]);
@@ -30,13 +32,16 @@ class FormatoEmisor
             $message = $result->Response->Description;
             \Log::error("Hubo un error al generar la factura G4S: " . $message . ", retrying..." . $retry);
             \Log::error($message);
-            if ($retry < 3 && (str_contains($message, 'Could not find file') || str_contains($message, 'no ha sido emitido'))) {
+            if (
+                $retry < 3
+                && (str_contains($message, 'Could not find file') || str_contains($message, 'no ha sido emitido'))
+            ) {
                 sleep(3 + ($retry * 2));
                 $retry = $retry + 1;
 
-                return self::consultar_g4s($empresa, $reimpresion, $url, $nit, $retry);
+                return self::consultarG4s($empresa, $reimpresion, $url, $nit, $retry);
             }
-            throw new Exception($message);
+            throw new FaceException($message, $result->Response);
         }
 
         return $result;
@@ -56,20 +61,18 @@ class FormatoEmisor
         switch ($resolucion['proveedorface']) {
             case 'infile':
                 $url      = $urls['fel']['infile']['pdf'] . $reimpresion['uuid'];
-                $client   = new Client;
+                $client   = new Client();
                 $response = $client->get($url);
                 $pdf      = base64_encode((string) $response->getBody());
                 break;
             default:
-                $result = self::consultar_g4s($empresa, $reimpresion, $url, $nit);
+                $result = self::consultarG4s($empresa, $reimpresion, $url, $nit);
 
                 if ($result->Response->Result == false) {
-                    Log::info(json_encode($result->Response));
-
                     sleep(4);
-                    $result = self::consultar_g4s($empresa, $reimpresion, $url, $nit);
+                    $result = self::consultarG4s($empresa, $reimpresion, $url, $nit);
                     if ($result->Response->Result == false) {
-                        throw new Exception($result->Response->Description);
+                        throw new FaceException($result->Response->Description, $result->Response);
                     }
                 }
                 $xml = base64_decode($result->ResponseData->ResponseData1);

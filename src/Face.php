@@ -1,12 +1,15 @@
 <?php
+
 namespace Csgt\Face;
 
 use Log;
 use SoapClient;
+use SoapFault;
 use DOMDocument;
 use Carbon\Carbon;
 use GuzzleHttp\Client;
 use Csgt\Face\FormatoEmisor;
+use Csgt\Face\Exceptions\FaceException;
 use SoftlogicGT\ValidationRulesGT\Rules\Dpi;
 use SoftlogicGT\ValidationRulesGT\Rules\Nit;
 
@@ -14,8 +17,8 @@ class Face
 {
     private $tipo               = 'fel';
     private const G4S           = 'g4s';
-    private const Infile        = 'infile';
-    private const Guatefacturas = 'guatefacturas';
+    private const INFILE        = 'infile';
+    private const GUATEFACTURAS = 'guatefacturas';
 
     private $urls = [
         'fel' => [
@@ -43,8 +46,8 @@ class Face
 
     private $proveedores = [
         self::G4S,
-        self::Infile,
-        self::Guatefacturas,
+        self::INFILE,
+        self::GUATEFACTURAS,
     ];
 
     private $resolucion = [
@@ -195,7 +198,7 @@ class Face
                 $response = $soap->getNit($params);
                 $response = $response->getNITResult->Response;
                 if (!$response->Result) {
-                    abort(404, "NIT no encontrado");
+                    throw new FaceException('NIT no encontrado', $response, 404);
                 }
                 $nombre = html_entity_decode($response->nombre);
                 $nombre = str_replace(',,', '|', $nombre);
@@ -213,7 +216,7 @@ class Face
                     'direccion' => null,
                 ];
                 break;
-            case self::Infile:
+            case self::INFILE:
                 if ($this->empresa['usuario'] == '') {
                     abort(422, 'El usuario de empresa emisora es requerido');
                 }
@@ -223,14 +226,14 @@ class Face
                     'nit_consulta'  => $nit,
                 ];
 
-                $client   = new Client;
-                $response = $client->post($this->urls['fel'][self::Infile]['nit'], [
+                $client   = new Client();
+                $response = $client->post($this->urls['fel'][self::INFILE]['nit'], [
                     'json' => $params,
                 ]);
 
                 $json = json_decode((string) $response->getBody());
                 if ($json->mensaje != '') {
-                    abort(404, $json->mensaje);
+                    throw new FaceException($json->mensaje, $json, 404);
                 }
                 $arr = [
                     'nit'       => $json->nit,
@@ -283,14 +286,12 @@ class Face
                 $result   = $response->RequestTransactionResult;
 
                 if ($result->Response->Result == false) {
-                    abort(404, 'DPI Inválido');
-
-                    return;
+                    throw new FaceException('DPI Inválido', $result->Response, 404);
                 }
 
                 $data = json_decode($result->ResponseData->ResponseData1);
                 if ($data->fallecido) {
-                    abort(404, 'DPI Inválido');
+                    throw new FaceException('DPI Inválido', $data, 404);
                 }
 
                 return [
@@ -300,7 +301,7 @@ class Face
                 ];
                 break;
 
-            case self::Infile:
+            case self::INFILE:
                 return [
                     'nit'       => $cui,
                     'nombre'    => "",
@@ -334,7 +335,7 @@ class Face
         switch ($this->tipo) {
             case 'fel':
                 switch ($this->resolucion['proveedorface']) {
-                    case self::Guatefacturas:
+                    case self::GUATEFACTURAS:
                         return $this->felGuatefacturas();
                         break;
 
@@ -491,7 +492,6 @@ class Face
             xmlwriter_text($xw, '0.1');
             xmlwriter_end_attribute($xw);
         } else {
-
             //Encabezados Version 0.2
 
             xmlwriter_start_attribute($xw, 'xmlns:dte');
@@ -1042,8 +1042,8 @@ class Face
 
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
-            case self::Infile:
-                $client  = new Client;
+            case self::INFILE:
+                $client  = new Client();
                 $headers = [
                     'UsuarioFirma'  => $username,
                     'LlaveFirma'    => $this->empresa['firmallave'],
@@ -1066,7 +1066,7 @@ class Face
                     $err = collect($json->descripcion_errores)->reduce(function ($carry, $e) {
                         return $carry . $e->mensaje_error . ' <br> ';
                     });
-                    abort(400, $err);
+                    throw new FaceException($err, $json);
                 }
 
                 //abort(400, json_encode($json));
@@ -1082,7 +1082,7 @@ class Face
                 $pdf       = null;
                 break;
 
-            case self::Guatefacturas:
+            case self::GUATEFACTURAS:
                 $soapParams = [
                     'trace'      => 1,
                     'keep_alive' => 0,
@@ -1107,17 +1107,26 @@ class Face
                 try {
                     $result = $soapClient->__soapCall('generaDocumento', $params);
                 } catch (SoapFault $exception) {
-                    abort(400, $exception->getMessage());
+                    throw new FaceException(
+                        $exception->getMessage(),
+                        $soapClient->__getLastResponse(),
+                        400,
+                        $exception
+                    );
                 }
 
                 try {
                     $xml = simplexml_load_string($result);
                 } catch (\Throwable $th) {
-                    abort(400, json_encode($result));
+                    throw new FaceException('Respuesta XML inválida', $result, 400, $th);
+                }
+
+                if ($xml === false) {
+                    throw new FaceException('Respuesta XML inválida', $result);
                 }
 
                 if (!$xml->Serie) {
-                    abort(400, $xml[0]);
+                    throw new FaceException((string) $xml[0], $result);
                 }
 
                 $serie     = $xml->Serie[0];
@@ -1155,7 +1164,7 @@ class Face
                 $result = $info->RequestTransactionResult;
 
                 if ($result->Response->Result == false && $result->Response->Code != 9) {
-                    abort(400, $result->Response->Description);
+                    throw new FaceException($result->Response->Description, $result->Response);
                 }
 
                 // Cuando el documento ya ha sido anulado
@@ -1213,7 +1222,7 @@ class Face
             'descuentos'  => $this->descuentos,
         ];
 
-        $formato  = new FormatoEmisor;
+        $formato  = new FormatoEmisor();
         $response = $formato::generar($params);
 
         return $response;
@@ -1233,8 +1242,17 @@ class Face
     }
 
     //Setters
-    public function setDetalle($aCantidad, $aPrecioUnitario, $aDescripcion, $aDescripcionAmpliada = '', $aBienServicio = 'BIEN', $aDescuento = 0, $aExtras = '', $aUnidadMedida = 'Un', $aCodigoEAN = '00000000000000')
-    {
+    public function setDetalle(
+        $aCantidad,
+        $aPrecioUnitario,
+        $aDescripcion,
+        $aDescripcionAmpliada = '',
+        $aBienServicio = 'BIEN',
+        $aDescuento = 0,
+        $aExtras = '',
+        $aUnidadMedida = 'Un',
+        $aCodigoEAN = '00000000000000'
+    ) {
         if ((float) $aCantidad == 0.0) {
             return false;
         }
@@ -1257,7 +1275,17 @@ class Face
 
     public function setResolucion($aParams)
     {
-        $validos = ['tipo', 'serie', 'correlativo', 'numeroautorizacion', 'fecharesolucion', 'rangoinicialautorizado', 'rangofinalautorizado', 'proveedorface', 'formato'];
+        $validos = [
+            'tipo',
+            'serie',
+            'correlativo',
+            'numeroautorizacion',
+            'fecharesolucion',
+            'rangoinicialautorizado',
+            'rangofinalautorizado',
+            'proveedorface',
+            'formato',
+        ];
 
         foreach ($aParams as $key => $val) {
             if (!in_array($key, $validos)) {
@@ -1283,9 +1311,30 @@ class Face
     public function setEmpresa($aParams)
     {
         $validos = [
-            'regimen', 'codigoestablecimiento', 'dispositivoelectronico', 'moneda', 'iva', 'codigopais', 'nit', 'footer',
-            'requestor', 'usuario', 'test', 'formatos', 'afiliacioniva', 'nombrecomercial', 'direccion', 'retencioniva',
-            'codigopostal', 'email', 'firmaalias', 'firmallave', 'nombreestablecimiento', 'departamento', 'municipio', 'logo',
+            'regimen',
+            'codigoestablecimiento',
+            'dispositivoelectronico',
+            'moneda',
+            'iva',
+            'codigopais',
+            'nit',
+            'footer',
+            'requestor',
+            'usuario',
+            'test',
+            'formatos',
+            'afiliacioniva',
+            'nombrecomercial',
+            'direccion',
+            'retencioniva',
+            'codigopostal',
+            'email',
+            'firmaalias',
+            'firmallave',
+            'nombreestablecimiento',
+            'departamento',
+            'municipio',
+            'logo',
             'totalletras',
         ];
 
@@ -1296,10 +1345,20 @@ class Face
         }
 
         $this->empresa                          = array_merge($this->empresa, $aParams);
-        $this->empresa['nombrecomercial']       = preg_replace('/[\x00-\x1F\x7F]/u', '', $this->empresa['nombrecomercial']);
-        $this->empresa['nombreestablecimiento'] = preg_replace('/[\x00-\x1F\x7F]/u', '', $this->empresa['nombreestablecimiento']);
+        $this->empresa['nombrecomercial'] = preg_replace(
+            '/[\x00-\x1F\x7F]/u',
+            '',
+            $this->empresa['nombrecomercial']
+        );
+        $this->empresa['nombreestablecimiento'] = preg_replace(
+            '/[\x00-\x1F\x7F]/u',
+            '',
+            $this->empresa['nombreestablecimiento']
+        );
         $this->empresa['nit']                   = $this->fixnit($this->empresa['nit']);
-        $this->empresa['nombreestablecimiento'] = strlen($this->empresa['nombreestablecimiento']) == 0 ? $this->empresa['nombrecomercial'] : $this->empresa['nombreestablecimiento'];
+        $this->empresa['nombreestablecimiento'] = strlen($this->empresa['nombreestablecimiento']) == 0
+            ? $this->empresa['nombrecomercial']
+            : $this->empresa['nombreestablecimiento'];
     }
 
     public function setFactura($aParams)
@@ -1430,7 +1489,12 @@ class Face
                         'Monto'     => number_format($descuento, 4, '.', ''),
                     ],
                 ];
-                $this->descuentos['SumaDeDescuentos'] = number_format($this->descuentos['SumaDeDescuentos'] + $descuento, 4, '.', '');
+                $this->descuentos['SumaDeDescuentos'] = number_format(
+                    $this->descuentos['SumaDeDescuentos'] + $descuento,
+                    4,
+                    '.',
+                    ''
+                );
 
                 $tasaParaBusqueda = number_format($descuentotasa, 4, '.', '');
 
@@ -1474,7 +1538,9 @@ class Face
             $detalle['Categoria'] = $aBienServicio;
 
             if (trim($aDescripcionAmpliada) != '' || trim(substr($aDescripcion, 69))) {
-                $detalle['TextosDePosicion']['Texto'] = trim(substr(trim(substr($aDescripcion, 69) . $aDescripcionAmpliada), 0, 999));
+                $detalle['TextosDePosicion']['Texto'] = trim(
+                    substr(trim(substr($aDescripcion, 69) . $aDescripcionAmpliada), 0, 999)
+                );
             }
 
             if ($aExtras != '') {
@@ -1490,13 +1556,13 @@ class Face
         }
     }
 
-    private function array_to_xml($student_info, &$xml_student_info)
+    private function arrayToXml($student_info, &$xml_student_info)
     {
         foreach ($student_info as $key => $value) {
             if (is_array($value)) {
                 $key     = is_numeric($key) ? "item$key" : $key;
                 $subnode = $xml_student_info->addChild($key);
-                $this->array_to_xml($value, $subnode);
+                $this->arrayToXml($value, $subnode);
             } else {
                 $key = is_numeric($key) ? "item$key" : $key;
                 $xml_student_info->addChild($key, htmlspecialchars($value));
