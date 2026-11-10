@@ -15,30 +15,30 @@ use SoftlogicGT\ValidationRulesGT\Rules\Nit;
 
 class Face
 {
-    private $tipo               = 'fel';
-    private const G4S           = 'g4s';
-    private const INFILE        = 'infile';
+    private $tipo = 'fel';
+    private const G4S = 'g4s';
+    private const INFILE = 'infile';
     private const GUATEFACTURAS = 'guatefacturas';
 
     private $urls = [
         'fel' => [
-            'g4s'           => [
+            'g4s' => [
                 'testurl' => 'https://pruebasfel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
                 'testnit' => 'http://pruebasfel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
-                'url'     => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
-                'nit'     => 'http://fel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
+                'url' => 'https://fel.g4sdocumenta.com/webservicefront/factwsfront.asmx?wsdl',
+                'nit' => 'http://fel.g4sdocumenta.com/ConsultaNIT/ConsultaNIT.asmx?wsdl',
             ],
-            'infile'        => [
+            'infile' => [
                 'testurl' => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
                 'testnit' => 'https://consultareceptores.feel.com.gt/rest/action',
-                'url'     => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
-                'nit'     => 'https://consultareceptores.feel.com.gt/rest/action',
-                'pdf'     => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
+                'url' => 'https://certificador.feel.com.gt/fel/procesounificado/transaccion/v2/xml',
+                'nit' => 'https://consultareceptores.feel.com.gt/rest/action',
+                'pdf' => 'https://report.feel.com.gt/ingfacereport/ingfacereport_documento?uuid=',
             ],
             'guatefacturas' => [
-                'testurl'      => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
-                'url'          => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
-                'testuser'     => 'usr_guatefac',
+                'testurl' => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
+                'url' => 'https://dte.guatefacturas.com/webservices63/feltestSB/Guatefac?wsdl',
+                'testuser' => 'usr_guatefac',
                 'testpassword' => 'usrguatefac',
             ],
         ],
@@ -51,89 +51,76 @@ class Face
     ];
 
     private $resolucion = [
-        'correlativo'            => 0,
-        'fecharesolucion'        => '',
-        'numeroautorizacion'     => '',
-        'proveedorface'          => self::G4S, //g4s, infile, guatefacturas
+        'correlativo' => 0,
+        'fecharesolucion' => '',
+        'numeroautorizacion' => '',
+        'proveedorface' => self::G4S, //g4s, infile, guatefacturas
         'rangofinalautorizado' => 0,
         'rangoinicialautorizado' => 0,
-        'serie'                  => '',
-        'tipo'                   => 'FACE63',
+        'serie' => '',
+        'tipo' => 'FACE63',
     ];
 
     // monedas: GTQ, USD
     // tipos: NIT, CUI, EXT
     private $factura = [
-        'direccion'         => '',
-        'moneda'            => 'GTQ',
-        'nit'               => '',
-        'nombre'            => '',
-        'tipo'              => 'NIT',
+        'direccion' => '',
+        'moneda' => 'GTQ',
+        'nit' => '',
+        'nombre' => '',
+        'tipo' => 'NIT',
         'referenciainterna' => 0,
     ];
 
-    private $totales = [
-        'descuento'       => 0,
-        'impuestos'       => 0,
-        'monto'           => 0,
-        'valorConDRMonto' => 0,
-        'valorSinDRMonto' => 0,
-    ];
-
     private $empresa = [
-        'afiliacioniva'          => 'GEN', //FEL: [GEN, PEQ]
+        'afiliacioniva' => 'GEN', //FEL: [GEN, PEQ]
         'codigoestablecimiento' => 1,
-        'codigopais'             => 'GT',
-        'codigopostal'           => '',
-        'departamento'           => 'Guatemala',
-        'direccion'              => '',
+        'codigopais' => 'GT',
+        'codigopostal' => '',
+        'departamento' => 'Guatemala',
+        'direccion' => '',
         'dispositivoelectronico' => '001',
-        'email'                  => 'email@email.com',
-        'firmaalias'             => '',
-        'firmallave'             => '',
-        'footer'                 => '',
-        'formatos'               => 'XML',
-        'iva'                    => 12,
-        'moneda'                 => 'GTQ',
-        'municipio'              => 'Guatemala',
-        'nit'                    => '',
-        'nombrecomercial'        => '',
-        'nombreestablecimiento'  => '',
-        'regimen'                => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
-        'requestor'             => '',
-        'retencioniva'           => false,
-        'test'                   => false,
-        'usuario'                => '',
-        'logo'                   => null,
-        'totalletras'            => '',
+        'email' => 'email@email.com',
+        'firmaalias' => '',
+        'firmallave' => '',
+        'footer' => '',
+        'formatos' => 'XML',
+        'iva' => 12,
+        'moneda' => 'GTQ',
+        'municipio' => 'Guatemala',
+        'nit' => '',
+        'nombrecomercial' => '',
+        'nombreestablecimiento' => '',
+        'regimen' => 'PAGO_TRIMESTRAL', //FACE: [RET_DEFINITIVA, PAGO_TRIMESTRAL],
+        'requestor' => '',
+        'retencioniva' => false,
+        'test' => false,
+        'usuario' => '',
+        'logo' => null,
+        'totalletras' => '',
     ];
 
     private $reimpresion = [
-        'uuid'               => '',
-        'fecha'              => '',
-        'serie'              => '',
-        'documento'          => '',
+        'uuid' => '',
+        'fecha' => '',
+        'serie' => '',
+        'documento' => '',
         'fechacertificacion' => '',
     ];
 
     private $anulacion = [
-        'serie'             => '',
-        'correlativo'       => '',
+        'serie' => '',
+        'correlativo' => '',
         'referenciainterna' => 0,
-        'razon'             => 'Anulación',
-        'fecha'             => '',
-        'autorizacion'      => '',
-        'nit'               => '',
-        'tipo'              => 'NIT',
-        'uid'               => '',
+        'razon' => 'Anulación',
+        'fecha' => '',
+        'autorizacion' => '',
+        'nit' => '',
+        'tipo' => 'NIT',
+        'uid' => '',
     ];
 
-    private $items           = [];
-    private $detalles        = [];
-    private $descuentosNKeys = 1;
-    private $descuentos      = [
-        'SumaDeDescuentos' => 0,
-    ];
+    private $items = [];
 
     public function buscarID($tipo, $numero)
     {
@@ -148,8 +135,8 @@ class Face
 
             case 'EXT':
                 return [
-                    'nit'       => $numero,
-                    'nombre'    => "",
+                    'nit' => $numero,
+                    'nombre' => "",
                     'direccion' => null,
                 ];
                 break;
@@ -190,11 +177,11 @@ class Face
                 }
 
                 $params = [
-                    'vNIT'      => $nit,
-                    'Entity'    => $this->fixnit($this->empresa['nit']),
+                    'vNIT' => $nit,
+                    'Entity' => $this->fixnit($this->empresa['nit']),
                     'Requestor' => $this->empresa['requestor'],
                 ];
-                $soap     = new SoapClient($this->urls['fel'][self::G4S]['nit']);
+                $soap = new SoapClient($this->urls['fel'][self::G4S]['nit']);
                 $response = $soap->getNit($params);
                 $response = $response->getNITResult->Response;
                 if (!$response->Result) {
@@ -203,7 +190,7 @@ class Face
                 $nombre = html_entity_decode($response->nombre);
                 $nombre = str_replace(',,', '|', $nombre);
                 $nombre = str_replace(',', ' ', $nombre);
-                $arr    = explode('|', $nombre);
+                $arr = explode('|', $nombre);
                 if (sizeof($arr) == 2) {
                     $nombre = $arr[1] . ", " . $arr[0];
                 } else {
@@ -211,8 +198,8 @@ class Face
                 }
 
                 $arr = [
-                    'nit'       => $response->NIT,
-                    'nombre'    => $nombre,
+                    'nit' => $response->NIT,
+                    'nombre' => $nombre,
                     'direccion' => null,
                 ];
                 break;
@@ -222,11 +209,11 @@ class Face
                 }
                 $params = [
                     'emisor_codigo' => $this->empresa['usuario'],
-                    'emisor_clave'  => $this->empresa['requestor'],
-                    'nit_consulta'  => $nit,
+                    'emisor_clave' => $this->empresa['requestor'],
+                    'nit_consulta' => $nit,
                 ];
 
-                $client   = new Client();
+                $client = new Client();
                 $response = $client->post($this->urls['fel'][self::INFILE]['nit'], [
                     'json' => $params,
                 ]);
@@ -236,8 +223,8 @@ class Face
                     throw new FaceException($json->mensaje, $json, 404);
                 }
                 $arr = [
-                    'nit'       => $json->nit,
-                    'nombre'    => html_entity_decode($json->nombre),
+                    'nit' => $json->nit,
+                    'nombre' => html_entity_decode($json->nombre),
                     'direccion' => null,
                 ];
                 break;
@@ -270,20 +257,20 @@ class Face
                 }
 
                 $params = [
-                    'Requestor'   => $this->empresa['requestor'],
+                    'Requestor' => $this->empresa['requestor'],
                     'Transaction' => 'SYSTEM_REQUEST',
-                    'Country'     => $this->empresa['codigopais'],
-                    'Entity'      => $this->empresa['nit'],
-                    'User'        => $this->empresa['requestor'],
-                    'UserName'    => $this->empresa['usuario'],
-                    'Data1'       => 'CONSULTA_CUI',
-                    'Data2'       => $cui,
-                    'Data3'       => "",
+                    'Country' => $this->empresa['codigopais'],
+                    'Entity' => $this->empresa['nit'],
+                    'User' => $this->empresa['requestor'],
+                    'UserName' => $this->empresa['usuario'],
+                    'Data1' => 'CONSULTA_CUI',
+                    'Data2' => $cui,
+                    'Data3' => "",
                 ];
 
-                $soap     = new SoapClient($this->urls['fel'][self::G4S]['url']);
+                $soap = new SoapClient($this->urls['fel'][self::G4S]['url']);
                 $response = $soap->RequestTransaction($params);
-                $result   = $response->RequestTransactionResult;
+                $result = $response->RequestTransactionResult;
 
                 if ($result->Response->Result == false) {
                     throw new FaceException('DPI Inválido', $result->Response, 404);
@@ -295,16 +282,16 @@ class Face
                 }
 
                 return [
-                    'nit'       => $data->CUI,
-                    'nombre'    => $data->nombre,
+                    'nit' => $data->CUI,
+                    'nombre' => $data->nombre,
                     'direccion' => null,
                 ];
                 break;
 
             case self::INFILE:
                 return [
-                    'nit'       => $cui,
-                    'nombre'    => "",
+                    'nit' => $cui,
+                    'nombre' => "",
                     'direccion' => null,
                 ];
                 break;
@@ -454,7 +441,7 @@ class Face
             }
         }
 
-        $factorIVA      = 1 + ($this->empresa['iva'] / 100);
+        $factorIVA = 1 + ($this->empresa['iva'] / 100);
         $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
 
         $xw = xmlwriter_open_memory();
@@ -638,16 +625,16 @@ class Face
         // }
 
         xmlwriter_start_element($xw, 'dte:Items'); //Items
-        $i          = 1;
-        $gTotal     = 0;
+        $i = 1;
+        $gTotal = 0;
         $gImpuestos = 0;
 
         foreach ($this->items as $item) {
-            $monto    = $item['precio'] * $item['cantidad'];
+            $monto = $item['precio'] * $item['cantidad'];
             $discount = $item['descuento'];
 
             if ($item['precio'] > 0 && $globalDiscount > 0) {
-                $diff                  = $monto - $discount;
+                $diff = $monto - $discount;
                 $globalDiscountPortion = 0;
                 if ($globalDiscount >= $diff) {
                     $globalDiscountPortion = $diff;
@@ -660,7 +647,7 @@ class Face
             $discount = round($discount, 6);
             $gTotal += round($monto - $discount, 2);
             $montoGravable = round((($monto - $discount) / $factorIVA), 2);
-            $impuestos     = $montoGravable * ($this->empresa['iva'] / 100);
+            $impuestos = $montoGravable * ($this->empresa['iva'] / 100);
             $gImpuestos += $impuestos;
 
             xmlwriter_start_element($xw, 'dte:Item'); //Item
@@ -852,7 +839,7 @@ class Face
             abort(400, 'La dirección del emisor es requerido');
         }
 
-        $factorIVA      = 1 + ($this->empresa['iva'] / 100);
+        $factorIVA = 1 + ($this->empresa['iva'] / 100);
         $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
 
         $xw = xmlwriter_open_memory();
@@ -862,19 +849,19 @@ class Face
 
         xmlwriter_start_element($xw, 'DocElectronico'); //<DocElectronico>
 
-        $gMonto         = 0;
-        $gTotal         = 0;
-        $gImpuestos     = 0;
-        $gDescuentos    = 0;
+        $gMonto = 0;
+        $gTotal = 0;
+        $gImpuestos = 0;
+        $gDescuentos = 0;
         $gMontoGravable = 0;
 
         $xwd = xmlwriter_open_memory();
         foreach ($this->items as $item) {
-            $monto    = $item['precio'] * $item['cantidad'];
+            $monto = $item['precio'] * $item['cantidad'];
             $discount = $item['descuento'];
 
             if ($item['precio'] > 0 && $globalDiscount > 0) {
-                $diff                  = $monto - $discount;
+                $diff = $monto - $discount;
                 $globalDiscountPortion = 0;
                 if ($globalDiscount >= $diff) {
                     $globalDiscountPortion = $diff;
@@ -887,7 +874,7 @@ class Face
             $discount = round($discount, 6);
             $gTotal += round($monto - $discount, 2);
             $montoGravable = round((($monto - $discount) / $factorIVA), 2);
-            $impuestos     = $montoGravable * ($this->empresa['iva'] / 100);
+            $impuestos = $montoGravable * ($this->empresa['iva'] / 100);
             $gImpuestos += $impuestos;
             $gDescuentos += $discount;
             $gMonto += $monto;
@@ -1020,44 +1007,44 @@ class Face
     {
         Log::info($aXml);
 
-        $entity      = trim($this->empresa['nit']);
+        $entity = trim($this->empresa['nit']);
         $transaction = 'SYSTEM_REQUEST';
-        $data1       = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
-        $data2       = base64_encode($aXml);
-        $data3       = $this->factura['referenciainterna'];
-        $username    = $this->empresa['usuario'];
+        $data1 = ($accion == 'emitir' ? 'POST_DOCUMENT_SAT' : 'VOID_DOCUMENT');
+        $data2 = base64_encode($aXml);
+        $data3 = $this->factura['referenciainterna'];
+        $username = $this->empresa['usuario'];
 
         $respuesta = [
-            'id'        => null,
-            'uuid'      => null,
-            'serie'     => null,
+            'id' => null,
+            'uuid' => null,
+            'serie' => null,
             'documento' => null,
-            'firma'     => null,
-            'nombre'    => null,
+            'firma' => null,
+            'nombre' => null,
             'direccion' => null,
-            'xml'       => null,
-            'html'      => null,
-            'pdf'       => null,
+            'xml' => null,
+            'html' => null,
+            'pdf' => null,
         ];
 
         //INFILE - Rest
         switch ($this->resolucion['proveedorface']) {
             case self::INFILE:
-                $client  = new Client();
+                $client = new Client();
                 $headers = [
-                    'UsuarioFirma'  => $username,
-                    'LlaveFirma'    => $this->empresa['firmallave'],
-                    'UsuarioApi'    => $username,
-                    'LlaveApi'      => $this->empresa['requestor'],
+                    'UsuarioFirma' => $username,
+                    'LlaveFirma' => $this->empresa['firmallave'],
+                    'UsuarioApi' => $username,
+                    'LlaveApi' => $this->empresa['requestor'],
                     'Identificador' => $this->factura['referenciainterna'],
-                    'Content-Type'  => 'text/xml; charset=UTF8',
+                    'Content-Type' => 'text/xml; charset=UTF8',
                 ];
                 $body = $aXml;
 
-                $url      = $this->getURL();
+                $url = $this->getURL();
                 $response = $client->post($url, [
                     'headers' => $headers,
-                    'body'    => $body,
+                    'body' => $body,
                 ]);
 
                 $json = json_decode((string) $response->getBody());
@@ -1070,36 +1057,36 @@ class Face
                 }
 
                 //abort(400, json_encode($json));
-                $uuid      = $json->uuid;
-                $serie     = $json->serie;
+                $uuid = $json->uuid;
+                $serie = $json->serie;
                 $documento = $json->numero;
-                $firma     = $uuid;
-                $xml       = $json->xml_certificado;
-                $id        = null;
-                $nombre    = null;
+                $firma = $uuid;
+                $xml = $json->xml_certificado;
+                $id = null;
+                $nombre = null;
                 $direccion = null;
-                $html      = null;
-                $pdf       = null;
+                $html = null;
+                $pdf = null;
                 break;
 
             case self::GUATEFACTURAS:
                 $soapParams = [
-                    'trace'      => 1,
+                    'trace' => 1,
                     'keep_alive' => 0,
-                    'login'      => $this->getUserPassword()['user'],
-                    'password'   => $this->getUserPassword()['password'],
+                    'login' => $this->getUserPassword()['user'],
+                    'password' => $this->getUserPassword()['password'],
                 ];
                 $soapClient = new SoapClient($this->getURL(), $soapParams);
                 //TODO: Fix data quemada
                 $params = [
-                    'pUsuario'         => $username,
-                    'pPassword'        => $this->empresa['requestor'],
-                    'pNitEmisor'       => $entity,
+                    'pUsuario' => $username,
+                    'pPassword' => $this->empresa['requestor'],
+                    'pNitEmisor' => $entity,
                     'pEstablecimiento' => 1,
-                    'pTipoDoc'         => 1,
-                    'pIdMaquina'       => '1',
-                    'pTipoRespuesta'   => 'R',
-                    'pXml'             => $aXml,
+                    'pTipoDoc' => 1,
+                    'pIdMaquina' => '1',
+                    'pTipoRespuesta' => 'R',
+                    'pXml' => $aXml,
                 ];
 
                 //print_r(json_encode($params, JSON_PRETTY_PRINT));
@@ -1129,15 +1116,15 @@ class Face
                     throw new FaceException((string) $xml[0], $result);
                 }
 
-                $serie     = $xml->Serie[0];
+                $serie = $xml->Serie[0];
                 $documento = $xml->Preimpreso[0];
-                $uuid      = $xml->NumeroAutorizacion[0];
-                $firma     = $uuid;
-                $id        = null;
-                $nombre    = $xml->Nombre[0];
+                $uuid = $xml->NumeroAutorizacion[0];
+                $firma = $uuid;
+                $id = null;
+                $nombre = $xml->Nombre[0];
                 $direccion = $xml->Direccion[0];
-                $html      = null;
-                $pdf       = null;
+                $html = null;
+                $pdf = null;
 
                 break;
 
@@ -1145,21 +1132,36 @@ class Face
                 $soapClient = new SoapClient($this->getURL(), ['trace' => true, 'keep_alive' => false]);
 
                 $params = [
-                    'Requestor'   => $this->empresa['requestor'],
+                    'Requestor' => $this->empresa['requestor'],
                     'Transaction' => $transaction,
-                    'Country'     => $this->empresa['codigopais'],
-                    'Entity'      => $entity,
-                    'User'        => $this->empresa['requestor'],
-                    'UserName'    => $username,
-                    'Data1'       => $data1,
-                    'Data2'       => $data2,
-                    'Data3'       => $data3,
+                    'Country' => $this->empresa['codigopais'],
+                    'Entity' => $entity,
+                    'User' => $this->empresa['requestor'],
+                    'UserName' => $username,
+                    'Data1' => $data1,
+                    'Data2' => $data2,
+                    'Data3' => $data3,
                 ];
 
                 Log::info($params);
 
                 ini_set('default_socket_timeout', 180);
-                $info = $soapClient->RequestTransaction($params);
+                try {
+                    $info = $soapClient->RequestTransaction($params);
+                } catch (\Throwable $exception) {
+                    Log::error('Error de comunicación con el certificador G4S.', [
+                        'exception' => $exception,
+                        'referencia_interna' => $data3,
+                    ]);
+
+                    throw new FaceException(
+                        'No fue posible comunicarse con el certificador FEL. '
+                        . 'Verifique el estado del documento antes de reintentar.',
+                        ['referencia_interna' => $data3],
+                        503,
+                        $exception
+                    );
+                }
 
                 $result = $info->RequestTransactionResult;
 
@@ -1173,32 +1175,32 @@ class Face
                 }
 
                 $uuid = optional(optional($result->Response)->Identifier)->DocumentGUID;
-                $xml  = optional($result->ResponseData)->ResponseData1;
+                $xml = optional($result->ResponseData)->ResponseData1;
 
                 $xmlDoc = new DOMDocument();
                 $xmlDoc->loadXML(base64_decode($xml));
 
-                $serie     = optional(optional($result->Response)->Identifier)->Batch;
+                $serie = optional(optional($result->Response)->Identifier)->Batch;
                 $documento = optional(optional($result->Response)->Identifier)->Serial;
-                $firma     = $uuid;
-                $id        = null;
-                $nombre    = null;
+                $firma = $uuid;
+                $id = null;
+                $nombre = null;
                 $direccion = null;
-                $html      = null;
-                $pdf       = null;
+                $html = null;
+                $pdf = null;
                 break;
         }
 
-        $respuesta['id']        = $id;
-        $respuesta['uuid']      = $uuid;
-        $respuesta['serie']     = $serie;
+        $respuesta['id'] = $id;
+        $respuesta['uuid'] = $uuid;
+        $respuesta['serie'] = $serie;
         $respuesta['documento'] = $documento;
-        $respuesta['firma']     = $firma;
-        $respuesta['nombre']    = $nombre;
+        $respuesta['firma'] = $firma;
+        $respuesta['nombre'] = $nombre;
         $respuesta['direccion'] = $direccion;
-        $respuesta['xml']       = $xml;
-        $respuesta['html']      = $html;
-        $respuesta['pdf']       = $pdf;
+        $respuesta['xml'] = $xml;
+        $respuesta['html'] = $html;
+        $respuesta['pdf'] = $pdf;
 
         return $respuesta;
     }
@@ -1211,18 +1213,17 @@ class Face
         ];
 
         $params = [
-            'resolucion'  => $this->resolucion,
-            'urls'        => $this->urls,
+            'resolucion' => $this->resolucion,
+            'urls' => $this->urls,
             'reimpresion' => $this->reimpresion,
-            'empresa'     => $this->empresa,
-            'url'         => $this->getURL(),
-            'nit'         => $this->fixNit($this->empresa['nit']),
-            'factura'     => $this->factura,
-            'items'       => $this->items,
-            'descuentos'  => $this->descuentos,
+            'empresa' => $this->empresa,
+            'url' => $this->getURL(),
+            'nit' => $this->fixNit($this->empresa['nit']),
+            'factura' => $this->factura,
+            'items' => $this->items,
         ];
 
-        $formato  = new FormatoEmisor();
+        $formato = new FormatoEmisor();
         $response = $formato::generar($params);
 
         return $response;
@@ -1261,15 +1262,15 @@ class Face
         }
 
         $this->items[] = [
-            'cantidad'            => $aCantidad,
-            'precio'              => $aPrecioUnitario,
-            'descripcion'         => $aDescripcion,
+            'cantidad' => $aCantidad,
+            'precio' => $aPrecioUnitario,
+            'descripcion' => $aDescripcion,
             'descripcionAmpliada' => $aDescripcionAmpliada,
-            'tipo'                => $aBienServicio,
-            'descuento'           => $aDescuento,
-            'extras'              => $aExtras,
-            'unidad'              => $aUnidadMedida,
-            'ean'                 => $aCodigoEAN,
+            'tipo' => $aBienServicio,
+            'descuento' => $aDescuento,
+            'extras' => $aExtras,
+            'unidad' => $aUnidadMedida,
+            'ean' => $aCodigoEAN,
         ];
     }
 
@@ -1292,7 +1293,7 @@ class Face
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->resolucion                  = array_merge($this->resolucion, $aParams);
+        $this->resolucion = array_merge($this->resolucion, $aParams);
         $this->resolucion['proveedorface'] = strtolower($this->resolucion['proveedorface']);
 
         if (!in_array($this->resolucion['proveedorface'], $this->proveedores)) {
@@ -1344,7 +1345,7 @@ class Face
             }
         }
 
-        $this->empresa                          = array_merge($this->empresa, $aParams);
+        $this->empresa = array_merge($this->empresa, $aParams);
         $this->empresa['nombrecomercial'] = preg_replace(
             '/[\x00-\x1F\x7F]/u',
             '',
@@ -1355,7 +1356,7 @@ class Face
             '',
             $this->empresa['nombreestablecimiento']
         );
-        $this->empresa['nit']                   = $this->fixnit($this->empresa['nit']);
+        $this->empresa['nit'] = $this->fixnit($this->empresa['nit']);
         $this->empresa['nombreestablecimiento'] = strlen($this->empresa['nombreestablecimiento']) == 0
             ? $this->empresa['nombrecomercial']
             : $this->empresa['nombreestablecimiento'];
@@ -1373,7 +1374,7 @@ class Face
         $this->factura = array_merge($this->factura, $aParams);
 
         $this->factura['direccion'] = ($this->factura['direccion'] == '' ? 'CIUDAD' : $this->factura['direccion']);
-        $this->factura['nit']       = $this->fixnit($this->factura['nit']);
+        $this->factura['nit'] = $this->fixnit($this->factura['nit']);
     }
 
     public function setReimpresion($aParams)
@@ -1397,9 +1398,9 @@ class Face
                 dd('Parámetro inválido (' . $key . ') solo se permiten: ' . implode(',', $validos));
             }
         }
-        $this->anulacion                    = array_merge($this->anulacion, $aParams);
+        $this->anulacion = array_merge($this->anulacion, $aParams);
         $this->factura['referenciainterna'] = $this->anulacion['referenciainterna'];
-        $this->anulacion['nit']             = $this->fixnit($this->anulacion['nit']);
+        $this->anulacion['nit'] = $this->fixnit($this->anulacion['nit']);
     }
 
     public function setFormatos($aParams)
@@ -1412,162 +1413,6 @@ class Face
             }
         }
         $this->empresa['formatos'] = trim(implode(' ', $aParams));
-    }
-
-    //Funciones privadas
-    private function generarDetallesFace()
-    {
-        $descuentoGlobal = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
-        foreach ($this->items as $item) {
-            $aCantidad            = $item['cantidad'];
-            $aPrecioUnitario      = $item['precio'];
-            $aDescripcion         = $item['descripcion'];
-            $aDescripcionAmpliada = $item['descripcionAmpliada'];
-            $aBienServicio        = $item['tipo'];
-            $aDescuento           = $item['descuento'];
-            $aExtras              = $item['extras'];
-            $aUnidadMedida        = $item['unidad'];
-            $aCodigoEAN           = $item['ean'];
-
-            if ($aDescripcion == '') {
-                $aDescripcion = 'Por su compra';
-            }
-
-            $factorIVA = 1 + ($this->empresa['iva'] / 100);
-            $monto     = $aPrecioUnitario * $aCantidad;
-
-            if ($aPrecioUnitario > 0 && $descuentoGlobal > 0) {
-                $resta                  = $monto - $aDescuento;
-                $porcionDescuentoGlobal = 0;
-                if ($descuentoGlobal >= $resta) {
-                    $porcionDescuentoGlobal = $resta;
-                } else {
-                    $porcionDescuentoGlobal = $descuentoGlobal;
-                }
-                $descuentoGlobal -= $porcionDescuentoGlobal;
-                $aDescuento += $porcionDescuentoGlobal;
-            }
-
-            $descuento        = $aDescuento / $factorIVA;
-            $valorSinDRPrecio = $aPrecioUnitario / $factorIVA;
-            $valorSinDRMonto  = $valorSinDRPrecio * $aCantidad;
-            $valorConDRMonto  = ($monto / $factorIVA) - $descuento;
-            $valorConDRPrecio = $valorConDRMonto / $aCantidad;
-            $impuestos        = $valorConDRMonto * ($this->empresa['iva'] / 100);
-
-            if ($aPrecioUnitario > 0) {
-                $descuentotasa = $aDescuento * 100 / $aPrecioUnitario / $aCantidad;
-            } else {
-                $descuentotasa = 0;
-            }
-
-            $this->totales['monto'] += $monto;
-            $this->totales['descuento'] += $descuento;
-            $this->totales['valorSinDRMonto'] += $valorSinDRMonto;
-            $this->totales['valorConDRMonto'] += $valorConDRMonto;
-            $this->totales['impuestos'] += $impuestos;
-
-            $detalle = [
-                'Descripcion'    => trim(substr($aDescripcion, 0, 69)),
-                'CodigoEAN'      => $aCodigoEAN,
-                'UnidadDeMedida' => $aUnidadMedida,
-                'Cantidad'       => $aCantidad,
-                'ValorSinDR'     => [
-                    'Precio' => number_format($valorSinDRPrecio, 4, '.', ''),
-                    'Monto'  => number_format($valorSinDRMonto, 4, '.', ''),
-                ],
-            ];
-
-            if ($aDescuento > 0) {
-                $detalle['DescuentosYRecargos'] = [
-                    'SumaDeDescuentos'  => number_format($descuento, 4, '.', ''),
-                    'DescuentoORecargo' => [
-                        'Operacion' => 'DESCUENTO',
-                        'Servicio'  => 'ALLOWANCE_GLOBAL',
-                        'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
-                        'Tasa'      => number_format($descuentotasa, 4, '.', ''),
-                        'Monto'     => number_format($descuento, 4, '.', ''),
-                    ],
-                ];
-                $this->descuentos['SumaDeDescuentos'] = number_format(
-                    $this->descuentos['SumaDeDescuentos'] + $descuento,
-                    4,
-                    '.',
-                    ''
-                );
-
-                $tasaParaBusqueda = number_format($descuentotasa, 4, '.', '');
-
-                $tasaFound = false;
-
-                foreach ($this->descuentos as $key => &$value) {
-                    if (is_array($value) && $value['Tasa'] === $tasaParaBusqueda) {
-                        $value['Base']  = number_format(((float) $value['Base']) + $valorSinDRMonto, 4, '.', '');
-                        $value['Monto'] = number_format(((float) $value['Monto']) + $descuento, 4, '.', '');
-                        $tasaFound      = true;
-                    }
-                }
-
-                if (!$tasaFound) {
-                    $this->descuentos['desc_' . (count($this->descuentos) - $this->descuentosNKeys)] = [
-                        'Operacion' => 'DESCUENTO',
-                        'Servicio'  => 'ALLOWANCE_GLOBAL',
-                        'Base'      => number_format($valorSinDRMonto, 4, '.', ''),
-                        'Tasa'      => $tasaParaBusqueda,
-                        'Monto'     => number_format($descuento, 4, '.', ''),
-                    ];
-                }
-            }
-
-            $detalle['ValorConDR'] = [
-                'Precio' => number_format($valorConDRPrecio, 4, '.', ''),
-                'Monto'  => number_format($valorConDRMonto, 4, '.', ''),
-            ];
-
-            $detalle['Impuestos'] = [
-                'TotalDeImpuestos'      => number_format($impuestos, 4, '.', ''),
-                'IngresosNetosGravados' => number_format($valorConDRMonto, 4, '.', ''),
-                'TotalDeIVA'            => number_format($impuestos, 4, '.', ''),
-                'Impuesto'              => [
-                    'Tipo'  => 'IVA',
-                    'Base'  => number_format($valorConDRMonto, 4, '.', ''),
-                    'Tasa'  => $this->empresa['iva'],
-                    'Monto' => number_format($impuestos, 4, '.', ''),
-                ],
-            ];
-            $detalle['Categoria'] = $aBienServicio;
-
-            if (trim($aDescripcionAmpliada) != '' || trim(substr($aDescripcion, 69))) {
-                $detalle['TextosDePosicion']['Texto'] = trim(
-                    substr(trim(substr($aDescripcion, 69) . $aDescripcionAmpliada), 0, 999)
-                );
-            }
-
-            if ($aExtras != '') {
-                $textos = [];
-                $arr    = explode(PHP_EOL, $aExtras);
-                foreach ($arr as $linea) {
-                    $textos[] = $linea;
-                }
-                $detalle['TextosDePosicion'] = $textos;
-            }
-
-            $this->detalles[] = $detalle;
-        }
-    }
-
-    private function arrayToXml($student_info, &$xml_student_info)
-    {
-        foreach ($student_info as $key => $value) {
-            if (is_array($value)) {
-                $key     = is_numeric($key) ? "item$key" : $key;
-                $subnode = $xml_student_info->addChild($key);
-                $this->arrayToXml($value, $subnode);
-            } else {
-                $key = is_numeric($key) ? "item$key" : $key;
-                $xml_student_info->addChild($key, htmlspecialchars($value));
-            }
-        }
     }
 
     private function fixnit($aNit, $aPadding = false)
@@ -1598,28 +1443,13 @@ class Face
         return $url;
     }
 
-    private function getNITURL()
-    {
-        if ($this->empresa['test']) {
-            $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testnit'];
-        } else {
-            $url = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['nit'];
-        }
-
-        if ($url == '') {
-            abort(400, 'La dirección del webservice es incorrecta.');
-        }
-
-        return $url;
-    }
-
     private function getUserPassword()
     {
         if ($this->empresa['test']) {
-            $user     = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testuser'];
+            $user = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testuser'];
             $password = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['testpassword'];
         } else {
-            $user     = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['user'];
+            $user = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['user'];
             $password = $this->urls[$this->tipo][$this->resolucion['proveedorface']]['password'];
         }
 

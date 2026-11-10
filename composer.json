@@ -25,5 +25,8 @@
                 "Csgt\\Face\\FaceServiceProvider"
             ]
         }
+    },
+    "require-dev": {
+        "php-cs-fixer/shim": "^3.0"
     }
 }

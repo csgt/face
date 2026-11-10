@@ -4,9 +4,8 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "2a8e7978662c638f5bf45ed19f366d86",
-    "packages": [],
-    "packages-dev": [
+    "content-hash": "b8d37172684141627365e2be214a365f",
+    "packages": [
         {
             "name": "doctrine/inflector",
             "version": "2.0.3",
@@ -101,62 +100,6 @@
                 }
             ],
             "time": "2020-05-29T15:13:26+00:00"
-        },
-        {
-            "name": "elibyy/tcpdf-laravel",
-            "version": "8.1.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/elibyy/tcpdf-laravel.git",
-                "reference": "50a5c6bfc38fc0c03deb16d4065267f471c787d9"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/elibyy/tcpdf-laravel/zipball/50a5c6bfc38fc0c03deb16d4065267f471c787d9",
-                "reference": "50a5c6bfc38fc0c03deb16d4065267f471c787d9",
-                "shasum": ""
-            },
-            "require": {
-                "illuminate/support": "^6.0|^7.0|^8.0",
-                "tecnickcom/tcpdf": "6.2.*|6.3.*|6.4.*|dev-main"
-            },
-            "type": "library",
-            "extra": {
-                "laravel": {
-                    "providers": [
-                        "Elibyy\\TCPDF\\ServiceProvider"
-                    ],
-                    "aliases": {
-                        "PDF": "Elibyy\\TCPDF\\Facades\\TCPDF"
-                    }
-                }
-            },
-            "autoload": {
-                "psr-4": {
-                    "Elibyy\\TCPDF\\": "src/"
-                }
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "MIT"
-            ],
-            "authors": [
-                {
-                    "name": "eli y",
-                    "email": "elibyy@gmail.com"
-                }
-            ],
-            "description": "tcpdf support for Laravel 6, 7, 8",
-            "keywords": [
-                "TCPDF",
-                "laravel",
-                "pdf"
-            ],
-            "support": {
-                "issues": "https://github.com/elibyy/tcpdf-laravel/issues",
-                "source": "https://github.com/elibyy/tcpdf-laravel/tree/8.1.2"
-            },
-            "time": "2021-03-27T14:23:50+00:00"
         },
         {
             "name": "illuminate/collections",
@@ -568,6 +511,61 @@
             "time": "2017-10-23T01:57:42+00:00"
         },
         {
+            "name": "softlogic-gt/laravel-validation-rules-gt",
+            "version": "v1.0.4",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/softlogic-gt/laravel-validation-rules-gt.git",
+                "reference": "9170c84b20891d4ab827d4579edef8d77b69b5a7"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/softlogic-gt/laravel-validation-rules-gt/zipball/9170c84b20891d4ab827d4579edef8d77b69b5a7",
+                "reference": "9170c84b20891d4ab827d4579edef8d77b69b5a7",
+                "shasum": ""
+            },
+            "require": {
+                "illuminate/support": "^7.0|^8.0|^9.0|^10.0|^11.0|^12.0",
+                "php": "^7.0|^8.0"
+            },
+            "type": "library",
+            "extra": {
+                "laravel": {
+                    "providers": [
+                        "SoftlogicGT\\ValidationRulesGT\\ValidationRulesGTServiceProvider"
+                    ]
+                }
+            },
+            "autoload": {
+                "psr-4": {
+                    "SoftlogicGT\\ValidationRulesGT\\": "src"
+                }
+            },
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Jose Galindo",
+                    "email": "jgalindo@softlogic.com.gt",
+                    "homepage": "https://softlogic.com.gt",
+                    "role": "Developer"
+                }
+            ],
+            "description": "A set of useful Laravel validation rules for Guatemala (GT)",
+            "homepage": "https://github.com/softlogic-gt/laravel-validation-rules-gt",
+            "keywords": [
+                "laravel-validation-rules-gt",
+                "softlogic"
+            ],
+            "support": {
+                "issues": "https://github.com/softlogic-gt/laravel-validation-rules-gt/issues",
+                "source": "https://github.com/softlogic-gt/laravel-validation-rules-gt/tree/v1.0.4"
+            },
+            "time": "2026-08-20T19:12:54+00:00"
+        },
+        {
             "name": "symfony/deprecation-contracts",
             "version": "v2.4.0",
             "source": {
@@ -971,78 +969,6 @@
             "time": "2021-03-23T23:28:01+00:00"
         },
         {
-            "name": "tecnickcom/tcpdf",
-            "version": "6.4.2",
-            "source": {
-                "type": "git",
-                "url": "https://github.com/tecnickcom/TCPDF.git",
-                "reference": "172540dcbfdf8dc983bc2fe78feff48ff7ec1c76"
-            },
-            "dist": {
-                "type": "zip",
-                "url": "https://api.github.com/repos/tecnickcom/TCPDF/zipball/172540dcbfdf8dc983bc2fe78feff48ff7ec1c76",
-                "reference": "172540dcbfdf8dc983bc2fe78feff48ff7ec1c76",
-                "shasum": ""
-            },
-            "require": {
-                "php": ">=5.3.0"
-            },
-            "type": "library",
-            "autoload": {
-                "classmap": [
-                    "config",
-                    "include",
-                    "tcpdf.php",
-                    "tcpdf_parser.php",
-                    "tcpdf_import.php",
-                    "tcpdf_barcodes_1d.php",
-                    "tcpdf_barcodes_2d.php",
-                    "include/tcpdf_colors.php",
-                    "include/tcpdf_filters.php",
-                    "include/tcpdf_font_data.php",
-                    "include/tcpdf_fonts.php",
-                    "include/tcpdf_images.php",
-                    "include/tcpdf_static.php",
-                    "include/barcodes/datamatrix.php",
-                    "include/barcodes/pdf417.php",
-                    "include/barcodes/qrcode.php"
-                ]
-            },
-            "notification-url": "https://packagist.org/downloads/",
-            "license": [
-                "LGPL-3.0-only"
-            ],
-            "authors": [
-                {
-                    "name": "Nicola Asuni",
-                    "email": "info@tecnick.com",
-                    "role": "lead"
-                }
-            ],
-            "description": "TCPDF is a PHP class for generating PDF documents and barcodes.",
-            "homepage": "http://www.tcpdf.org/",
-            "keywords": [
-                "PDFD32000-2008",
-                "TCPDF",
-                "barcodes",
-                "datamatrix",
-                "pdf",
-                "pdf417",
-                "qrcode"
-            ],
-            "support": {
-                "issues": "https://github.com/tecnickcom/TCPDF/issues",
-                "source": "https://github.com/tecnickcom/TCPDF/tree/6.4.2"
-            },
-            "funding": [
-                {
-                    "url": "https://www.paypal.com/cgi-bin/webscr?cmd=_donations&currency_code=GBP&business=paypal@tecnick.com&item_name=donation%20for%20tcpdf%20project",
-                    "type": "custom"
-                }
-            ],
-            "time": "2021-07-20T14:43:20+00:00"
-        },
-        {
             "name": "voku/portable-ascii",
             "version": "1.5.6",
             "source": {
@@ -1117,15 +1043,75 @@
             "time": "2020-11-12T00:07:28+00:00"
         }
     ],
+    "packages-dev": [
+        {
+            "name": "php-cs-fixer/shim",
+            "version": "v3.95.30",
+            "source": {
+                "type": "git",
+                "url": "https://github.com/PHP-CS-Fixer/shim.git",
+                "reference": "413c9705404163fa3e5f7854208c5e9ae1a4590d"
+            },
+            "dist": {
+                "type": "zip",
+                "url": "https://api.github.com/repos/PHP-CS-Fixer/shim/zipball/413c9705404163fa3e5f7854208c5e9ae1a4590d",
+                "reference": "413c9705404163fa3e5f7854208c5e9ae1a4590d",
+                "shasum": ""
+            },
+            "require": {
+                "ext-json": "*",
+                "ext-tokenizer": "*",
+                "php": "^7.4 || ^8.0"
+            },
+            "replace": {
+                "friendsofphp/php-cs-fixer": "self.version"
+            },
+            "suggest": {
+                "ext-dom": "For handling output formats in XML",
+                "ext-mbstring": "For handling non-UTF8 characters."
+            },
+            "bin": [
+                "php-cs-fixer",
+                "php-cs-fixer.phar"
+            ],
+            "type": "application",
+            "notification-url": "https://packagist.org/downloads/",
+            "license": [
+                "MIT"
+            ],
+            "authors": [
+                {
+                    "name": "Fabien Potencier",
+                    "email": "fabien@symfony.com"
+                },
+                {
+                    "name": "Dariusz Rumiński",
+                    "email": "dariusz.ruminski@gmail.com"
+                }
+            ],
+            "description": "A tool to automatically fix PHP code style",
+            "support": {
+                "issues": "https://github.com/PHP-CS-Fixer/shim/issues",
+                "source": "https://github.com/PHP-CS-Fixer/shim/tree/v3.95.30"
+            },
+            "funding": [
+                {
+                    "url": "https://github.com/keradus",
+                    "type": "github"
+                }
+            ],
+            "time": "2026-11-09T14:32:47+00:00"
+        }
+    ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": [],
+    "stability-flags": {},
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {
         "php": ">=7.0.0",
         "ext-soap": "*"
     },
-    "platform-dev": [],
-    "plugin-api-version": "2.1.0"
+    "platform-dev": {},
+    "plugin-api-version": "2.9.0"
 }
