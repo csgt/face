@@ -273,12 +273,12 @@ class Face
                 $result = $response->RequestTransactionResult;
 
                 if ($result->Response->Result == false) {
-                    throw new FaceException('DPI Inválido', $result->Response, 404);
+                    throw new FaceException('DPI ' . $cui .' inválido', $result->Response, 404);
                 }
 
                 $data = json_decode($result->ResponseData->ResponseData1);
                 if ($data->fallecido) {
-                    throw new FaceException('DPI Inválido', $data, 404);
+                    throw new FaceException('DPI ' . $cui .' inválido', $data, 404);
                 }
 
                 return [
