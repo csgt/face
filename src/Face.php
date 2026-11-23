@@ -159,11 +159,11 @@ class Face
 
         $validator = new Nit($nit);
         if (!$validator->passes('nit', $nit)) {
-            abort(400, 'NIT no válido');
+            abort(400, 'NIT ' . $nit .  ' no válido');
         }
 
         if (strlen($nit) <= 0) {
-            abort(404, 'NIT no encontrado');
+            abort(404, 'NIT ' . $nit .  ' no encontrado');
         }
 
         $arr = [];
@@ -185,7 +185,7 @@ class Face
                 $response = $soap->getNit($params);
                 $response = $response->getNITResult->Response;
                 if (!$response->Result) {
-                    throw new FaceException('NIT no encontrado', $response, 404);
+                    throw new FaceException('NIT ' . $nit .  ' no encontrado', $response, 404);
                 }
                 $nombre = html_entity_decode($response->nombre);
                 $nombre = str_replace(',,', '|', $nombre);
@@ -440,6 +440,8 @@ class Face
                 abort(400, 'La llave para firma es requerida.  Revise su configuracion de empresa.');
             }
         }
+
+        $this->validarIva();
 
         $factorIVA = 1 + ($this->empresa['iva'] / 100);
         $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
@@ -838,6 +840,8 @@ class Face
         if ($this->empresa['direccion'] == '') {
             abort(400, 'La dirección del emisor es requerido');
         }
+
+        $this->validarIva();
 
         $factorIVA = 1 + ($this->empresa['iva'] / 100);
         $globalDiscount = isset($this->factura['descuentoGlobal']) ? $this->factura['descuentoGlobal'] : 0;
@@ -1413,6 +1417,15 @@ class Face
             }
         }
         $this->empresa['formatos'] = trim(implode(' ', $aParams));
+    }
+
+    private function validarIva()
+    {
+        $iva = $this->empresa['iva'];
+
+        if (!is_numeric($iva) || ($this->empresa['afiliacioniva'] == 'GEN' && $iva <= 0)) {
+            abort(400, 'El porcentaje de IVA de la empresa es inválido (' . var_export($iva, true) . ').  Revise su configuracion de empresa.');
+        }
     }
 
     private function fixnit($aNit, $aPadding = false)
